@@ -1,3 +1,7 @@
 from django.contrib import admin
+from agenda import models
 
-# Register your models here.
+@admin.register(models.Agenda)
+class AgendaAdmin(admin.ModelAdmin):
+    ...
+
