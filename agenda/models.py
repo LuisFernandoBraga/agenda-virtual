@@ -22,6 +22,7 @@ class Faixa_Etaria(models.Model):
     def __str__(self) -> str:
         return self.nome    
 
+
 class Agenda(models.Model):
     class Meta:
         verbose_name = 'Agendamento'
@@ -48,11 +49,6 @@ class Agenda(models.Model):
         blank=True, null=True
     )
 
-    proprietario = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL,
-        blank=True, null=True
-    )
-    
+       
 def __str__(self) -> str:
     return f'{self.name} {self.sobrenome}'

@@ -18,7 +18,3 @@ class SexoAdmin(admin.ModelAdmin):
 @admin.register(models.Faixa_Etaria)
 class Faixa_EtariaAdmin(admin.ModelAdmin):
     list_display = 'nome',
-
-@admin.register(models.Proprietario)
-class ProprietarioAdmin(admin.ModelAdmin):
-    list_display = 'nome',

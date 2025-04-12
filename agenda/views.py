@@ -1,3 +1,4 @@
+# type: ignore
 from django.shortcuts import render, redirect, get_object_or_404
 from agenda.models import Agenda
 from django.db.models import Q
@@ -75,7 +76,7 @@ class AgendaForm(forms.ModelForm):
         fields = (
             'nome', 'sobrenome', 'cpf', 'email', 'contato', 
             'descricao_servico', 'data_hora', 'valor', 
-            'genero', 'faixa_etaria', 'imagem',
+            'genero', 'faixa_etaria', 'imagem', 
         )
 
 def index(request, methods=["GET", "POST"]):
