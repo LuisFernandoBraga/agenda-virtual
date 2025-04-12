@@ -1,0 +1,56 @@
+{% extends 'global/base.html' %}
+
+{% block content %}
+    <div class="single-contact">
+        <h1 class="single-contact-name">
+            {{cadastro.nome}} {{cadastro.sobrenome}}
+        </h1>
+
+        <p><b>ID:</b> {{ cadastro.id }}</p>
+        <p><b>CPF:</b> {{ cadastro.cpf }}</p>
+        <p><b>E-mail:</b> {{ cadastro.email }}</p>
+        <p><b>Contato:</b> {{ cadastro.contato }}</p>
+        <p><b>Descrição do Serviço:</b> {{ cadastro.descricao_servico }}</p>
+        <p><b>Data e Hora:</b> {{ cadastro.data_hora }}</p>
+        <p><b>Valor:</b> {{ cadastro.valor }}</p>
+        <p><b>Gênero:</b> {{ cadastro.genero.nome }}</p>
+        <p><b>Faixa Etária:</b> {{ cadastro.faixa_etaria.nome }}</p>
+        
+        {% if cadastro.imagem %}
+            <p>
+                <img src="{{ cadastro.imagem.url }}" alt="{{ cadastro.nome }}">
+            </p>
+        {% endif %}
+        
+        <form action="{% url "atualiza" cadastro.id %}" method="POST">
+            {% csrf_token %}
+
+            <a 
+                href="{% url "atualiza" cadastro.id %}" 
+                onclick="return confirm('Deseja realmente atualizar esse registro?')" 
+                type="submit" class="d-flex" 
+            >
+                <h3>Atualizar</h3>
+            </a>
+        </form>
+        
+        <br>
+        <form action="{% url "excluir" cadastro.id %}" method="POST">
+            {% csrf_token %}
+
+            <a 
+                href="{% url "excluir" cadastro.id %}" 
+                onclick="return confirm('Deseja realmente excluir esse registro?')" 
+                type="submit" class="d-flex"
+            >
+                <h3>Excluir</h3>
+            </a>
+        </form>
+    </div>
+    
+    <div>
+       <a href="{% url "index" %}">
+        <button type="submit" class="d-flex"><h3>Voltar</h3></button><br>
+       </a>
+    </div>
+{% endblock content %}

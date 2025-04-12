@@ -1,1 +1,69 @@
 {% extends 'global/base.html' %}
+
+
+{% block content %}
+<h1 style="text-align: center";>Área do Profissional</h1>
+<hr>
+    {% if page_obj %}
+    <div>
+        <a href={% url "inserir_cadastro" %} class="d-flex" 
+        role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
+        <table class="table table-bordered table hover">
+            <thead class="table-success">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Nome</th>
+                <th scope="col">Sobrenome</th>
+                <th scope="col">Contato</th>
+                <th scope="col">Descrição do Serviço</th>
+                <th scope="col">Data e Hora</th>
+                <th scope="col">Valor do Serviço</th>
+                
+            </tr>
+            </thead>
+            <tbody>
+            {% for cadastro in page_obj %}
+                <tr class="table-row">
+                <td class="table-cel">
+                    <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
+                        {{cadastro.id}}
+                    </a>
+                </td>
+                <td>{{cadastro.nome}}</td>
+                <td>{{cadastro.sobrenome}}</td>
+                <td>{{cadastro.contato}}</td>
+                <td>{{cadastro.descricao_servico}}</td>
+                <td>{{cadastro.data_hora}}</td>
+                <td>{{cadastro.valor}}</td>
+            {% endfor %}    
+            </tbody>
+        </div>
+    {% else %}
+    <div class="single-contact">
+        <h1 class="single-contact-name">
+            Nenhum agendamento encontrado!
+        </h1>
+    </div>
+    {% endif %}
+    
+    {% if page_obj %}
+        <div class="pagination">
+            <span class="step-links" align=center>
+                {% if page_obj.has_previous %}
+                    <a href="?page=1&q={{ request.GET.q.strip }}">&laquo; Primeira</a>
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q.strip }}">Anterior</a>
+                {% endif %}
+    
+                <span class="current">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+                </span>
+    
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q.strip }}">Próxima</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}&q={{ request.GET.q.strip }}">Última &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    {% endif %}
+    
+    {% endblock content %}

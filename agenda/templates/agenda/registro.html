@@ -1,0 +1,29 @@
+{% extends "global/base.html" %}
+
+{% block content %}
+    <h1 align=center>
+        Criar Registro de Novo Usuário
+    </h1>
+
+    <form 
+        action="{{ form_action }}" 
+        method="POST"
+    >
+        
+        {% csrf_token %}
+        <div class="form-content"> 
+           {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label> <br>
+                    {{ field }}
+                </div>
+            {% endfor %}
+        </div>     
+
+        <div class="form-content" align=center>
+            <div class="form-group">
+                <button class="btn btn-primary" type="submit"><h3>Criar/Atualizar</h3></button>
+            </div>
+        </div>
+    </form>    
+{% endblock content %}
