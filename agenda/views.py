@@ -75,7 +75,7 @@ class AgendaForm(forms.ModelForm):
         fields = (
             'nome', 'sobrenome', 'cpf', 'email', 'contato', 
             'descricao_servico', 'data_hora', 'valor', 
-            'genero', 'faixa_etaria', 'imagem', 'proprietario',
+            'genero', 'faixa_etaria', 'imagem',
         )
 
 def index(request, methods=["GET", "POST"]):
