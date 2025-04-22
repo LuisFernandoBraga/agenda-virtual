@@ -10,16 +10,15 @@
         role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
         <table class="table table-bordered table hover">
             <thead class="table-success">
-            <tr>
-                <th scope="col">Id</th>
-                <th scope="col">Nome</th>
-                <th scope="col">Sobrenome</th>
-                <th scope="col">Contato</th>
-                <th scope="col">Descrição do Serviço</th>
-                <th scope="col">Data e Hora</th>
-                <th scope="col">Valor do Serviço</th>
-                
-            </tr>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">Nome</th>
+                    <th scope="col">Sobrenome</th>
+                    <th scope="col">Contato</th>
+                    <th scope="col">Descrição do Serviço</th>
+                    <th scope="col">Data e Hora</th>
+                    <th scope="col">Valor do Serviço</th>                
+                </tr>
             </thead>
             <tbody>
             {% for cadastro in page_obj %}
@@ -40,6 +39,8 @@
         </div>
     {% else %}
     <div class="single-contact">
+        <a href={% url "inserir_cadastro" %} class="d-flex" 
+        role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
         <h1 class="single-contact-name">
             Nenhum agendamento encontrado!
         </h1>
