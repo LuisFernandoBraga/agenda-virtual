@@ -1,7 +1,7 @@
 ###############################################################################
 # Replace
 # agenda the name of the gunicorn file you want
-# luisfernando your user name
+# Desktop your user name
 # agendavirtual the folder name of your project
 # project the folder name where you find a file called wsgi.py
 #
@@ -32,15 +32,15 @@ Requires=agenda.socket
 After=network.target
 
 [Service]
-User=luisfernando
+User=Desktop
 Group=www-data
 Restart=on-failure
-# EnvironmentFile=/home/luisfernando/agendavirtual/.env
-WorkingDirectory=/home/luisfernando/agendavirtual
+# EnvironmentFile=/Users/Desktop/agendavirtual/.env
+WorkingDirectory=/Users/Desktop/agendavirtual
 # --error-logfile --enable-stdio-inheritance --log-level and --capture-output
 # are all for debugging purposes.
-ExecStart=/home/luisfernando/agendavirtual/venv/bin/gunicorn \
-          --error-logfile /home/luisfernando/agendavirtual/gunicorn-error-log \
+ExecStart=/Users/Desktop/agendavirtual/venv/bin/gunicorn \
+          --error-logfile /Users/Desktop/agendavirtual/gunicorn-error-log \
           --enable-stdio-inheritance \
           --log-level "debug" \
           --capture-output \
