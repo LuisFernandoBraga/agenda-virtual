@@ -83,7 +83,7 @@ def index(request, methods=["GET", "POST"]):
         .filter(show=True)\
         .order_by('-id')
     
-    paginator = Paginator(agendas, 4)  
+    paginator = Paginator(agendas, 8)  
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
