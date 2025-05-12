@@ -53,5 +53,5 @@ class Agenda(models.Model):
         blank=True, null=True
     )'''
     
-def __str__(self) -> str:
-    return f'{self.name} {self.sobrenome}'
+    def __str__(self) -> str:
+        return f'{self.nome} {self.sobrenome}'
