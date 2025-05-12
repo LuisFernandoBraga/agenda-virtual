@@ -1,0 +1,61 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: agenda_virtual
+          MYSQL_USER: luisfernando
+          MYSQL_PASSWORD: 32811880
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configuração do Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Instalação de Dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Lint com flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+    - name: Executar Migrations
+      run: |
+        python manage.py makemigrations
+        python manage.py migrate
+      env:
+        USE_SQLITE_FOR_TESTS: 'True'
+        
+    - name: Executar Testes com Cobertura
+      run: |
+        coverage run --source='.' manage.py test
+        coverage report
+        coverage xml
+      env:
+        USE_SQLITE_FOR_TESTS: 'True'
+        
+    - name: Upload Cobertura para Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false 
