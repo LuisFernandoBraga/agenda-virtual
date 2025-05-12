@@ -98,6 +98,17 @@ DATABASES = {
     }
 }
 
+# Configuração para o banco de dados de teste
+import sys
+import os
+if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE_FOR_TESTS') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'test_db.sqlite3',
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
