@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'mysql.connector.django',
     'agenda',
 ]
 
@@ -86,11 +85,11 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'agenda_virtual',
         'USER': 'luisfernando',
         'PASSWORD': '32811880',
-        'HOST': 'localhost',
+        'HOST': 'db4free.net',
         'PORT': '3306',
         'OPTIONS':  {
         'charset': 'utf8mb4',
