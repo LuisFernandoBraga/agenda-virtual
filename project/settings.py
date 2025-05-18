@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-2by@5k=4eo(sifou3_z)%n8v(0_=ii4zo1y91dazh-^ro#oa@&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['agenda-virtual-ak27.onrender.com', '127.0.0.1', 'localhost']
 
