@@ -44,12 +44,22 @@ class AgendaAdminForm(forms.ModelForm):
                     label=self.fields['faixa_etaria'].label
                 )
                 
+                # Replace the proprietario field (User model)
+                choices = self._get_choices_from_sqlitecloud('auth_user', label_field='username')
+                self.fields['proprietario'] = forms.ChoiceField(
+                    choices=[('', '---------')] + choices, 
+                    required=False,
+                    label=self.fields['proprietario'].label
+                )
+                
                 # Set initial values
                 if self.instance and self.instance.pk:
                     if self.instance.genero_id:
                         self.initial['genero'] = self.instance.genero_id
                     if self.instance.faixa_etaria_id:
                         self.initial['faixa_etaria'] = self.instance.faixa_etaria_id
+                    if self.instance.proprietario_id:
+                        self.initial['proprietario'] = self.instance.proprietario_id
                 
             except Exception as e:
                 logger.error(f"Error setting up CloudModelChoiceField: {e}")

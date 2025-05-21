@@ -80,6 +80,7 @@ def create_agenda_item(data):
         # Preparar os dados para inserção
         genero_id = data.get('genero')
         faixa_etaria_id = data.get('faixa_etaria')
+        proprietario_id = data.get('proprietario')
         
         # Converter para int se for string
         if genero_id and isinstance(genero_id, str) and genero_id.isdigit():
@@ -87,6 +88,9 @@ def create_agenda_item(data):
         
         if faixa_etaria_id and isinstance(faixa_etaria_id, str) and faixa_etaria_id.isdigit():
             faixa_etaria_id = int(faixa_etaria_id)
+        
+        if proprietario_id and isinstance(proprietario_id, str) and proprietario_id.isdigit():
+            proprietario_id = int(proprietario_id)
         
         # Campos de imagem requerem tratamento especial
         imagem_path = ''
@@ -103,8 +107,8 @@ def create_agenda_item(data):
         query = """
         INSERT INTO agenda_agenda (
             nome, sobrenome, cpf, email, contato, descricao_servico,
-            data_hora, valor, show, imagem, genero_id, faixa_etaria_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            data_hora, valor, show, imagem, genero_id, faixa_etaria_id, proprietario_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
         """
         
         params = (
@@ -118,7 +122,8 @@ def create_agenda_item(data):
             data.get('valor', ''),
             imagem_path,
             genero_id if genero_id else None,
-            faixa_etaria_id if faixa_etaria_id else None
+            faixa_etaria_id if faixa_etaria_id else None,
+            proprietario_id if proprietario_id else None
         )
         
         execute_update(query, params)
@@ -142,6 +147,7 @@ def update_agenda_item(data, item_id):
         # Preparar os dados para atualização
         genero_id = data.get('genero')
         faixa_etaria_id = data.get('faixa_etaria')
+        proprietario_id = data.get('proprietario')
         
         # Converter para int se for string
         if genero_id and isinstance(genero_id, str) and genero_id.isdigit():
@@ -149,6 +155,9 @@ def update_agenda_item(data, item_id):
         
         if faixa_etaria_id and isinstance(faixa_etaria_id, str) and faixa_etaria_id.isdigit():
             faixa_etaria_id = int(faixa_etaria_id)
+        
+        if proprietario_id and isinstance(proprietario_id, str) and proprietario_id.isdigit():
+            proprietario_id = int(proprietario_id)
         
         # Campos de imagem requerem tratamento especial
         imagem_path = ''
@@ -197,6 +206,10 @@ def update_agenda_item(data, item_id):
         if faixa_etaria_id:
             query += ", faixa_etaria_id = ?"
             params.append(faixa_etaria_id)
+        
+        if proprietario_id:
+            query += ", proprietario_id = ?"
+            params.append(proprietario_id)
         
         # Finalizar a query com a condição WHERE
         query += " WHERE id = ?"

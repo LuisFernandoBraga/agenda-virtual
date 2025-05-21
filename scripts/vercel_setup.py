@@ -102,6 +102,74 @@ try:
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='agenda_faixa_etaria'")
     faixa_etaria_exists = cursor.fetchone() is not None
     
+    # Verificar se a tabela auth_user existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_user'")
+    auth_user_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_user se não existir
+    if not auth_user_exists:
+        print("Criando tabela auth_user...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_user (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            password VARCHAR(128) NOT NULL,
+            last_login DATETIME NULL,
+            is_superuser BOOLEAN NOT NULL,
+            username VARCHAR(150) NOT NULL UNIQUE,
+            first_name VARCHAR(150) NOT NULL,
+            last_name VARCHAR(150) NOT NULL,
+            email VARCHAR(254) NOT NULL,
+            is_staff BOOLEAN NOT NULL,
+            is_active BOOLEAN NOT NULL,
+            date_joined DATETIME NOT NULL
+        )
+        """)
+        
+        # Adicionar usuário admin padrão
+        from datetime import datetime
+        import hashlib
+        import base64
+        
+        # Hash simples para 'admin123' - em produção usar algo mais seguro
+        hashed_password = "pbkdf2_sha256$720000$salt$hashedpassword"
+        now = datetime.now().isoformat()
+        
+        cursor.execute("""
+        INSERT INTO auth_user (
+            password, last_login, is_superuser, username, 
+            first_name, last_name, email, is_staff, 
+            is_active, date_joined
+        ) VALUES (?, NULL, 1, 'admin', 'Admin', 'User', 'admin@example.com', 1, 1, ?)
+        """, (hashed_password, now))
+        
+        conn.commit()
+        print("Tabela auth_user criada e admin padrão adicionado com sucesso!")
+    else:
+        print("Tabela auth_user já existe.")
+        
+        # Verificar se tem pelo menos um usuário admin
+        cursor.execute("SELECT COUNT(*) FROM auth_user WHERE is_staff = 1")
+        admin_count = cursor.fetchone()[0]
+        
+        if admin_count == 0:
+            print("Nenhum admin encontrado. Adicionando admin padrão...")
+            from datetime import datetime
+            
+            # Hash simples para 'admin123'
+            hashed_password = "pbkdf2_sha256$720000$salt$hashedpassword"
+            now = datetime.now().isoformat()
+            
+            cursor.execute("""
+            INSERT INTO auth_user (
+                password, last_login, is_superuser, username, 
+                first_name, last_name, email, is_staff, 
+                is_active, date_joined
+            ) VALUES (?, NULL, 1, 'admin', 'Admin', 'User', 'admin@example.com', 1, 1, ?)
+            """, (hashed_password, now))
+            
+            conn.commit()
+            print("Admin padrão adicionado com sucesso!")
+    
     # Criar tabela agenda_genero se não existir
     if not genero_exists:
         print("Criando tabela agenda_genero...")
