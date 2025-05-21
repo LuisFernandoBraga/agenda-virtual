@@ -1,0 +1,39 @@
+{% extends "admin/change_list.html" %}
+
+{% block result_list %}
+  {% if cl.result_count > 0 %}
+    {{ block.super }}
+  {% else %}
+    <div class="alert alert-warning">
+      <p>
+        A tabela para este modelo pode não estar disponível no ambiente atual ou não contém registros.
+      </p>
+      <p>
+        No ambiente Vercel, as tabelas do banco de dados são criadas sob demanda.
+        Para criar registros, clique no botão "Adicionar" acima.
+      </p>
+      <p>
+        Se você está vendo esta mensagem após adicionar registros, verifique os logs para mais detalhes.
+      </p>
+    </div>
+    <style>
+      .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+      }
+      .alert-warning {
+        color: #8a6d3b;
+        background-color: #fcf8e3;
+        border-color: #faebcc;
+      }
+    </style>
+  {% endif %}
+{% endblock %}
+
+{% block pagination %}
+  {% if cl.result_count > 0 %}
+    {{ block.super }}
+  {% endif %}
+{% endblock %} 

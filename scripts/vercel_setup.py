@@ -257,6 +257,151 @@ try:
     for f in faixas:
         print(f"ID: {f[0]}, Nome: {f[1]}")
         
+    # Verificar se a tabela agenda_agenda existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='agenda_agenda'")
+    agenda_agenda_exists = cursor.fetchone() is not None
+    
+    # Criar tabela agenda_agenda se não existir
+    if not agenda_agenda_exists:
+        print("Criando tabela agenda_agenda...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agenda_agenda (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome VARCHAR(100) NOT NULL,
+            sobrenome VARCHAR(100) NOT NULL,
+            cpf VARCHAR(50) NOT NULL,
+            email VARCHAR(50) NOT NULL,
+            contato VARCHAR(50) NOT NULL,
+            descricao_servico TEXT NOT NULL,
+            data_hora DATETIME NOT NULL,
+            valor VARCHAR(50) NOT NULL,
+            show BOOLEAN NOT NULL,
+            imagem VARCHAR(100),
+            genero_id INTEGER,
+            faixa_etaria_id INTEGER,
+            proprietario_id INTEGER,
+            FOREIGN KEY (genero_id) REFERENCES agenda_genero (id),
+            FOREIGN KEY (faixa_etaria_id) REFERENCES agenda_faixa_etaria (id),
+            FOREIGN KEY (proprietario_id) REFERENCES auth_user (id)
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela agenda_agenda criada com sucesso!")
+    else:
+        print("Tabela agenda_agenda já existe.")
+    
+    # Verificar se a tabela auth_permission existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_permission'")
+    auth_permission_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_permission se não existir
+    if not auth_permission_exists:
+        print("Criando tabela auth_permission...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_permission (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            content_type_id INTEGER NOT NULL,
+            codename VARCHAR(100) NOT NULL,
+            CONSTRAINT auth_permission_content_type_id_codename_01ab375a_uniq UNIQUE (content_type_id, codename),
+            FOREIGN KEY (content_type_id) REFERENCES django_content_type (id)
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela auth_permission criada com sucesso!")
+    else:
+        print("Tabela auth_permission já existe.")
+    
+    # Verificar se a tabela auth_group existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_group'")
+    auth_group_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_group se não existir
+    if not auth_group_exists:
+        print("Criando tabela auth_group...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_group (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(150) NOT NULL UNIQUE
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela auth_group criada com sucesso!")
+    else:
+        print("Tabela auth_group já existe.")
+    
+    # Verificar se a tabela auth_group_permissions existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_group_permissions'")
+    auth_group_permissions_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_group_permissions se não existir
+    if not auth_group_permissions_exists:
+        print("Criando tabela auth_group_permissions...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_group_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id INTEGER NOT NULL,
+            permission_id INTEGER NOT NULL,
+            CONSTRAINT auth_group_permissions_group_id_permission_id_0cd325b0_uniq UNIQUE (group_id, permission_id),
+            FOREIGN KEY (group_id) REFERENCES auth_group (id),
+            FOREIGN KEY (permission_id) REFERENCES auth_permission (id)
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela auth_group_permissions criada com sucesso!")
+    else:
+        print("Tabela auth_group_permissions já existe.")
+    
+    # Verificar se a tabela auth_user_groups existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_user_groups'")
+    auth_user_groups_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_user_groups se não existir
+    if not auth_user_groups_exists:
+        print("Criando tabela auth_user_groups...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_user_groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            group_id INTEGER NOT NULL,
+            CONSTRAINT auth_user_groups_user_id_group_id_94350c0c_uniq UNIQUE (user_id, group_id),
+            FOREIGN KEY (user_id) REFERENCES auth_user (id),
+            FOREIGN KEY (group_id) REFERENCES auth_group (id)
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela auth_user_groups criada com sucesso!")
+    else:
+        print("Tabela auth_user_groups já existe.")
+    
+    # Verificar se a tabela auth_user_user_permissions existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_user_user_permissions'")
+    auth_user_user_permissions_exists = cursor.fetchone() is not None
+    
+    # Criar tabela auth_user_user_permissions se não existir
+    if not auth_user_user_permissions_exists:
+        print("Criando tabela auth_user_user_permissions...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auth_user_user_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            permission_id INTEGER NOT NULL,
+            CONSTRAINT auth_user_user_permissions_user_id_permission_id_14a6b632_uniq UNIQUE (user_id, permission_id),
+            FOREIGN KEY (user_id) REFERENCES auth_user (id),
+            FOREIGN KEY (permission_id) REFERENCES auth_permission (id)
+        )
+        """)
+        
+        conn.commit()
+        print("Tabela auth_user_user_permissions criada com sucesso!")
+    else:
+        print("Tabela auth_user_user_permissions já existe.")
+    
     # Fechar conexão
     conn.close()
     print("\nSetup do SQLite Cloud concluído com sucesso!")

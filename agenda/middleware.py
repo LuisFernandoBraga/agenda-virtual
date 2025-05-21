@@ -26,6 +26,7 @@ class SqliteCloudConnectionMiddleware:
             self.patch_model_choice_field()
             self.patch_admin_widgets()
             self.patch_model_form_meta()
+            self.patch_admin_changelist()
         
         # Chama a view
         response = self.get_response(request)
@@ -176,6 +177,7 @@ class SqliteCloudConnectionMiddleware:
         """
         try:
             from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
+            from django.db import OperationalError
             
             # Verificar se já foi patcheado
             if hasattr(RelatedFieldWidgetWrapper, '_cloud_patched'):
@@ -263,3 +265,64 @@ class SqliteCloudConnectionMiddleware:
             logger.info("ModelFormMetaclass patcheado com sucesso")
         except Exception as e:
             logger.error(f"Erro ao patchar ModelFormMetaclass: {e}") 
+
+    def patch_admin_changelist(self):
+        """
+        Patch for Django's admin changelist view to handle missing tables.
+        """
+        try:
+            from django.contrib.admin.views.main import ChangeList
+            from django.db import OperationalError
+            
+            # Check if already patched
+            if hasattr(ChangeList, '_cloud_patched'):
+                return
+            
+            # Store original methods
+            original_get_results = ChangeList.get_results
+            
+            def cloud_get_results(self, request):
+                """
+                Patched version of get_results that handles missing tables.
+                """
+                try:
+                    # Try the original method first
+                    return original_get_results(self, request)
+                except OperationalError as e:
+                    error_msg = str(e).lower()
+                    if 'no such table' in error_msg:
+                        logger.warning(f"No such table error in changelist: {e}")
+                        
+                        # Create an empty result set to avoid error
+                        from django.db.models.query import EmptyQuerySet
+                        self.result_list = EmptyQuerySet()
+                        self.full_result_count = 0
+                        
+                        # Mock the paginator
+                        class MockPaginator:
+                            count = 0
+                            num_pages = 1
+                            page_range = range(1, 2)
+                        
+                        # Set empty result properties
+                        self.paginator = MockPaginator()
+                        self.page_num = 1
+                        self.show_all = False
+                        self.can_show_all = False
+                        self.multi_page = False
+                        
+                        # Add a message to display in the template
+                        from django.contrib import messages
+                        messages.warning(request, f"A tabela necessária para esta lista não está disponível: {e}")
+                        
+                        return None
+                    # If it's another error, re-raise it
+                    raise
+            
+            # Apply the patch
+            ChangeList.get_results = cloud_get_results
+            ChangeList._cloud_patched = True
+            
+            logger.info("Admin ChangeList patched successfully")
+        except Exception as e:
+            logger.error(f"Error patching Admin ChangeList: {e}") 

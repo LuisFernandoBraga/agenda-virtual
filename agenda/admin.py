@@ -82,6 +82,7 @@ class AgendaAdmin(admin.ModelAdmin):
     search_fields = ('nome', 'sobrenome', 'contato')
     list_per_page = 10
     ordering = ('-id',)
+    change_list_template = 'admin/cloud_change_list.html'
     
     def add_view(self, request, form_url='', extra_context=None):
         if settings.IS_VERCEL and settings.SQLITECLOUD_ENABLED:
@@ -151,9 +152,11 @@ class AgendaAdmin(admin.ModelAdmin):
 
 class GeneroAdmin(admin.ModelAdmin):
     list_display = ('nome',)
+    change_list_template = 'admin/cloud_change_list.html'
 
 class Faixa_EtariaAdmin(admin.ModelAdmin):
     list_display = ('nome',)
+    change_list_template = 'admin/cloud_change_list.html'
 
 admin.site.register(Agenda, AgendaAdmin)
 admin.site.register(Genero, GeneroAdmin)
