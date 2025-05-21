@@ -111,17 +111,15 @@ if IS_VERCEL:
         }
     }
     
-    # Usar armazenamento de sessão baseado em cache em vez de banco de dados
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
+    # Usar armazenamento de sessão baseado em cookies em vez de banco de dados
+    SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_AGE = 86400 * 7  # 7 dias
+    SESSION_COOKIE_SECURE = True  # Cookies HTTPS apenas
     
-    # Configuração de cache simples na memória
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'vercel-cache',
-        }
-    }
+    # Desabilitar a criação de tabelas no banco de dados para auth_user
+    # Isso evita que o Django tente criar tabelas no banco de dados em memória
+    AUTH_USER_MODEL = 'auth.User'
     
     # Arquivo para gerenciar conexão com SQLite Cloud
     SQLITECLOUD_ENABLED = True

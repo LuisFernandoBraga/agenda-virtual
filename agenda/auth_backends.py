@@ -6,12 +6,37 @@ Esse backend substitui a autenticação padrão do Django quando estamos no ambi
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from agenda.cloud_db import execute_query
+from agenda.cloud_db import execute_query, execute_update
 import hashlib
 import binascii
 import base64
+from django.utils import timezone
+from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in
 
 UserModel = get_user_model()
+
+# Interceptar o sinal de login para atualizar last_login no SQLite Cloud
+@receiver(user_logged_in)
+def update_last_login_cloud(sender, user, request, **kwargs):
+    """
+    Atualiza o last_login diretamente no SQLite Cloud quando um usuário faz login
+    """
+    if settings.SQLITECLOUD_ENABLED and hasattr(user, 'id'):
+        # Atualizar last_login no SQLite Cloud
+        now = timezone.now().isoformat()
+        execute_update(
+            "UPDATE auth_user SET last_login = ? WHERE id = ?",
+            (now, user.id)
+        )
+        # Atualizar o objeto user sem salvar no banco
+        user.last_login = timezone.now()
+        
+        # Importante: retornar False para não continuar o processamento normal
+        return False
+    
+    # Se não for SQLite Cloud, continua o processamento normal
+    return None
 
 class SqliteCloudBackend(ModelBackend):
     """
@@ -56,6 +81,24 @@ class SqliteCloudBackend(ModelBackend):
             user.first_name = user_data[5]  # first_name field
             user.last_name = user_data[6]   # last_name field
             
+            # Definir o campo last_login para não ser atualizado pelo Django
+            user.last_login = timezone.now()
+            
+            # Importante: adicionar um flag para indicar que este usuário é do SQLite Cloud
+            user._from_sqlitecloud = True
+            
+            # Sobrescrever o método save para não tentar salvar no banco quando for um usuário SQLite Cloud
+            original_save = user.save
+            def custom_save(*args, **kwargs):
+                if kwargs.get('update_fields') == ['last_login']:
+                    # Se for apenas last_login, já cuidamos disso no signal
+                    return
+                # Caso contrário, chamar o save original
+                return original_save(*args, **kwargs)
+            
+            # Aplicar o monkey patch
+            user.save = custom_save
+            
             return user
         
         return None
@@ -87,6 +130,25 @@ class SqliteCloudBackend(ModelBackend):
         user.email = user_data[7]  # email field
         user.first_name = user_data[5]  # first_name field
         user.last_name = user_data[6]   # last_name field
+        
+        # Definir o campo last_login para impedir atualizações
+        if user_data[2]:  # last_login field
+            user.last_login = user_data[2]
+        
+        # Marcar como usuário do SQLite Cloud
+        user._from_sqlitecloud = True
+        
+        # Sobrescrever o método save
+        original_save = user.save
+        def custom_save(*args, **kwargs):
+            if kwargs.get('update_fields') == ['last_login']:
+                # Se for apenas last_login, já cuidamos disso no signal
+                return
+            # Caso contrário, chamar o save original
+            return original_save(*args, **kwargs)
+        
+        # Aplicar o monkey patch
+        user.save = custom_save
         
         return user
         
