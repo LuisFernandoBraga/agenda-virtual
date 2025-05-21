@@ -48,22 +48,29 @@ echo "Directory listing: $(ls -la)"
 
 # Instalar dependências
 $PIP_CMD install --upgrade pip
-$PIP_CMD install -r requirements.txt
+echo "Instalando apenas o SQLite Cloud para configuração inicial..."
+$PIP_CMD install sqlitecloud
+
+# Configurar o SQLite Cloud diretamente
+if [ "$VERCEL" = "1" ]; then
+    echo "Configurando o SQLite Cloud com script simplificado..."
+    $PYTHON_CMD scripts/vercel_setup.py
+fi
+
+# Agora instalar o resto das dependências
+echo "Instalando dependências da Vercel (sem mysqlclient)..."
+$PIP_CMD install -r requirements-vercel.txt
 
 # Criar diretório de saída staticfiles
 mkdir -p staticfiles
 
 # Coletar arquivos estáticos
-$PYTHON_CMD manage.py collectstatic --noinput
+$PYTHON_CMD manage.py collectstatic --noinput || {
+    echo "Erro ao coletar arquivos estáticos, continuando mesmo assim..."
+}
 
 # Criar pasta media se não existir
 mkdir -p media
-
-# Criar e popular tabelas no SQLite Cloud se estiver em ambiente Vercel
-if [ "$VERCEL" = "1" ]; then
-    echo "Criando e populando tabelas no SQLite Cloud..."
-    $PYTHON_CMD scripts/populate_sqlitecloud.py
-fi
 
 # Garantir que o diretório staticfiles existe e não está vazio
 if [ ! -d "staticfiles" ] || [ -z "$(ls -A staticfiles)" ]; then
