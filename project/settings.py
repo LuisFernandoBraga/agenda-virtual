@@ -102,14 +102,12 @@ if IS_VERCEL:
 SQLITECLOUD_ENABLED = os.environ.get('SQLITECLOUD_ENABLED', 'False') == 'True'
 
 if IS_VERCEL:
-    # Configuração de banco de dados para Vercel (usar SQLite Cloud)
+    # Configuração de banco de dados para Vercel (usar SQLite na memória)
+    # Isso evita que o Django tente acessar um arquivo no sistema de arquivos
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': 'db.sqlite3',
-            'OPTIONS': {
-                'uri': True,
-            },
+            'NAME': ':memory:',  # SQLite database in-memory
         }
     }
     
