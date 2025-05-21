@@ -16,4 +16,7 @@ urlpatterns = [
 
     # Rotas alternativas para a Vercel
     path('registroagendamento/inserir_cadastro/', views.inserir_cadastro, name='inserir_cadastro_alt'),
+    path('registroagendamento/<int:cadastro_id>/atualiza/', views.atualiza, name='atualiza_alt'),
+    path('registroagendamento/<int:cadastro_id>/detail/', views.cadastro, name='cadastro_alt'),
+    path('registroagendamento/<int:cadastro_id>/excluir/', views.excluir, name='excluir_alt'),
 ]

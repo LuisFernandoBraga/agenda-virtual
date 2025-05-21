@@ -145,7 +145,8 @@ def index(request, methods=["GET", "POST"]):
 
     contexto = {
         'page_obj': page_obj,
-        'site_title': 'Área do Profissional - '
+        'site_title': 'Área do Profissional - ',
+        'is_cloud': settings.SQLITECLOUD_ENABLED
     }
     
     return render(
@@ -286,6 +287,7 @@ def pesquisa(request):
         'page_obj': page_obj,
         'site_title': 'Pesquisa - ',
         'pesquisa_valor': pesquisa_valor,
+        'is_cloud': settings.SQLITECLOUD_ENABLED
     }
     
     return render(
@@ -345,18 +347,65 @@ def inserir_cadastro(request):
     )
 
 def atualiza(request, cadastro_id):
-    cadastro = get_object_or_404(Agenda, pk=cadastro_id, show=True)
-    form_action = reverse('atualiza', args=(cadastro_id,))
-
     # Determinar qual formulário usar
     if settings.SQLITECLOUD_ENABLED:
         from agenda.cloud_forms import CloudAgendaForm as FormClass
         from agenda.utils import update_agenda_item
+        from agenda.cloud_db import execute_query
+        
+        # Obter dados diretamente do SQLite Cloud
+        query = """
+        SELECT 
+            a.id, a.nome, a.sobrenome, a.cpf, a.email, a.contato,
+            a.descricao_servico, a.data_hora, a.valor, a.show,
+            a.imagem, a.genero_id, a.faixa_etaria_id
+        FROM agenda_agenda a
+        WHERE a.id = ?
+        """
+        result = execute_query(query, (cadastro_id,))
+        
+        if not result or not result[0]:
+            # Cadastro não encontrado
+            messages.error(request, 'Cadastro não encontrado!')
+            return redirect('index')
+            
+        # Criar um "mock" da instância para o formulário
+        item = result[0]
+        cadastro_mock = {
+            'id': item[0],
+            'nome': item[1],
+            'sobrenome': item[2],
+            'cpf': item[3],
+            'email': item[4],
+            'contato': item[5],
+            'descricao_servico': item[6],
+            'data_hora': item[7],
+            'valor': item[8],
+            # Adicionar os IDs dos campos de chave estrangeira
+            'genero_id': item[11],
+            'faixa_etaria_id': item[12]
+        }
+        
+        # Usar dicionário de inicialização em vez de instance
+        initial = cadastro_mock.copy()
+        # Converter IDs para string para o ChoiceField
+        if initial['genero_id']:
+            initial['genero'] = str(initial['genero_id'])
+        if initial['faixa_etaria_id']:
+            initial['faixa_etaria'] = str(initial['faixa_etaria_id'])
     else:
+        # Método original usando ORM do Django
         from agenda.views import AgendaForm as FormClass
+        cadastro = get_object_or_404(Agenda, pk=cadastro_id, show=True)
+        initial = None  # Não usado no modo ORM
+    
+    form_action = reverse('atualiza', args=(cadastro_id,))
 
     if request.method == 'POST':
-        form = FormClass(request.POST, request.FILES, instance=cadastro)
+        if settings.SQLITECLOUD_ENABLED:
+            form = FormClass(request.POST, request.FILES)
+        else:
+            form = FormClass(request.POST, request.FILES, instance=cadastro)
 
         contexto = {
             'form': form,
@@ -384,9 +433,15 @@ def atualiza(request, cadastro_id):
             'agenda/inserir_cadastro.html',
             contexto
         )
+    
+    # GET - exibir formulário inicial
+    if settings.SQLITECLOUD_ENABLED:
+        form = FormClass(initial=initial)
+    else:
+        form = FormClass(instance=cadastro)
         
     contexto = {
-        'form': FormClass(instance=cadastro),
+        'form': form,
         'form_action': form_action,
     }
     return render(

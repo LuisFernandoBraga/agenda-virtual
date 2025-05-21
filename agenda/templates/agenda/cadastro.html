@@ -31,30 +31,53 @@
             </p>
         {% endif %}
         
-        <form action="{% url "atualiza" cadastro.id %}" method="POST">
-            {% csrf_token %}
-
-            <a 
-                href="{% url "atualiza" cadastro.id %}" 
-                onclick="return confirm('Deseja realmente atualizar esse registro?')" 
-                type="submit" class="d-flex" 
-            >
-                <h3>Atualizar</h3>
-            </a>
-        </form>
-        
-        <br>
-        <form action="{% url "excluir" cadastro.id %}" method="POST">
-            {% csrf_token %}
-
-            <a 
-                href="{% url "excluir" cadastro.id %}" 
-                onclick="return confirm('Deseja realmente excluir esse registro?')" 
-                type="submit" class="d-flex"
-            >
-                <h3>Excluir</h3>
-            </a>
-        </form>
+        {% if is_cloud %}
+            <form action="{% url 'atualiza_alt' cadastro.id %}" method="POST">
+                {% csrf_token %}
+                <a 
+                    href="{% url 'atualiza_alt' cadastro.id %}" 
+                    onclick="return confirm('Deseja realmente atualizar esse registro?')" 
+                    type="submit" class="d-flex" 
+                >
+                    <h3>Atualizar</h3>
+                </a>
+            </form>
+            
+            <br>
+            <form action="{% url 'excluir_alt' cadastro.id %}" method="POST">
+                {% csrf_token %}
+                <a 
+                    href="{% url 'excluir_alt' cadastro.id %}" 
+                    onclick="return confirm('Deseja realmente excluir esse registro?')" 
+                    type="submit" class="d-flex"
+                >
+                    <h3>Excluir</h3>
+                </a>
+            </form>
+        {% else %}
+            <form action="{% url 'atualiza' cadastro.id %}" method="POST">
+                {% csrf_token %}
+                <a 
+                    href="{% url 'atualiza' cadastro.id %}" 
+                    onclick="return confirm('Deseja realmente atualizar esse registro?')" 
+                    type="submit" class="d-flex" 
+                >
+                    <h3>Atualizar</h3>
+                </a>
+            </form>
+            
+            <br>
+            <form action="{% url 'excluir' cadastro.id %}" method="POST">
+                {% csrf_token %}
+                <a 
+                    href="{% url 'excluir' cadastro.id %}" 
+                    onclick="return confirm('Deseja realmente excluir esse registro?')" 
+                    type="submit" class="d-flex"
+                >
+                    <h3>Excluir</h3>
+                </a>
+            </form>
+        {% endif %}
     </div>
     
     <div>
