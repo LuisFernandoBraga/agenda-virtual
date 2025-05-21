@@ -111,6 +111,18 @@ if IS_VERCEL:
         }
     }
     
+    # Usar armazenamento de sessão baseado em cache em vez de banco de dados
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
+    
+    # Configuração de cache simples na memória
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'vercel-cache',
+        }
+    }
+    
     # Arquivo para gerenciar conexão com SQLite Cloud
     SQLITECLOUD_ENABLED = True
 elif 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE_FOR_TESTS') == 'True':
