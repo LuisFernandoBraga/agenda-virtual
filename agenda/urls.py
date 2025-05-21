@@ -14,5 +14,6 @@ urlpatterns = [
     # URL para user
     path('usuario/criar/', views.registro, name='registro'),
 
-
+    # Rotas alternativas para a Vercel
+    path('registroagendamento/inserir_cadastro/', views.inserir_cadastro, name='inserir_cadastro_alt'),
 ]

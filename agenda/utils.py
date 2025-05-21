@@ -68,11 +68,27 @@ def create_agenda_item(data):
         bool: True se foi criado com sucesso, False caso contrário
     """
     if settings.SQLITECLOUD_ENABLED:
+        # Preparar os dados para inserção
+        genero_id = data.get('genero')
+        faixa_etaria_id = data.get('faixa_etaria')
+        
+        # Campos de imagem requerem tratamento especial
+        imagem_path = ''
+        if 'imagem' in data and hasattr(data['imagem'], 'name'):
+            # Em uma implementação completa, você deve fazer upload do arquivo
+            # para um serviço como S3 e salvar o caminho
+            imagem_path = data['imagem'].name
+        
+        # Formatar a data e hora
+        data_hora = data.get('data_hora', '')
+        if hasattr(data_hora, 'strftime'):
+            data_hora = data_hora.strftime('%Y-%m-%d %H:%M:%S')
+        
         query = """
         INSERT INTO agenda_agenda (
             nome, sobrenome, cpf, email, contato, descricao_servico,
-            data_hora, valor, show, genero_id, faixa_etaria_id, proprietario_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            data_hora, valor, show, imagem, genero_id, faixa_etaria_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
         """
         
         params = (
@@ -82,12 +98,11 @@ def create_agenda_item(data):
             data.get('email', ''),
             data.get('contato', ''),
             data.get('descricao_servico', ''),
-            data.get('data_hora', ''),
+            data_hora,
             data.get('valor', ''),
-            1,  # show
-            data.get('genero_id'),
-            data.get('faixa_etaria_id'),
-            data.get('proprietario_id')
+            imagem_path,
+            genero_id if genero_id else None,
+            faixa_etaria_id if faixa_etaria_id else None
         )
         
         execute_update(query, params)
