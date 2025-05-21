@@ -20,6 +20,10 @@
       "dest": "/staticfiles/$1"
     },
     {
+      "src": "/admin/static/(.*)",
+      "dest": "/staticfiles/admin/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {

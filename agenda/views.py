@@ -167,8 +167,18 @@ def index(request, methods=["GET", "POST"]):
     )
 
 def cadastro(request, cadastro_id):
+    # Verificar se cadastro_id é válido
+    if not cadastro_id:
+        messages.error(request, 'ID de cadastro inválido!')
+        return redirect('index')
+        
     if settings.SQLITECLOUD_ENABLED:
         from agenda.cloud_db import execute_query
+        
+        # Log para depuração
+        logger = logging.getLogger(__name__)
+        logger.info(f"Buscando cadastro com ID: {cadastro_id}")
+        
         # Obter dados do SQLite Cloud
         query = """
         SELECT 
@@ -184,6 +194,7 @@ def cadastro(request, cadastro_id):
         
         if not result:
             # Registro não encontrado
+            messages.error(request, f'Cadastro com ID {cadastro_id} não encontrado!')
             return redirect('index')
         
         # Criar um objeto similar ao modelo para usar no template
@@ -204,8 +215,12 @@ def cadastro(request, cadastro_id):
             'faixa_etaria': agenda_item[12]
         }
     else:
-        # Método original usando ORM do Django
-        inserir_cadastro = Agenda.objects.get(pk=cadastro_id)
+        try:
+            # Método original usando ORM do Django
+            inserir_cadastro = Agenda.objects.get(pk=cadastro_id)
+        except Agenda.DoesNotExist:
+            messages.error(request, f'Cadastro com ID {cadastro_id} não encontrado!')
+            return redirect('index')
         
     contexto = {
         'cadastro': inserir_cadastro,

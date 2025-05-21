@@ -25,7 +25,7 @@
                 <tr class="table-row">
                 <td class="table-cel">
                     {% if is_cloud %}
-                        {% if cadastro.0 %}
+                        {% if cadastro.0 and cadastro.0 != '' %}
                             <a class="table-link" href="{% url 'cadastro' cadastro.0 %}">
                                 {{cadastro.0}}
                             </a>

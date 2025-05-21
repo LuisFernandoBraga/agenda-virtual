@@ -30,7 +30,7 @@ def get_agenda_items(limit=None, offset=None, search=None):
         LEFT JOIN agenda_genero g ON a.genero_id = g.id
         LEFT JOIN agenda_faixa_etaria f ON a.faixa_etaria_id = f.id
         LEFT JOIN auth_user u ON a.proprietario_id = u.id
-        WHERE a.show = 1
+        WHERE a.show = 1 AND a.id IS NOT NULL AND a.id != ''
         """
         
         params = []
@@ -50,7 +50,16 @@ def get_agenda_items(limit=None, offset=None, search=None):
                 query += " OFFSET ?"
                 params.append(offset)
                 
-        return execute_query(query, tuple(params) if params else None)
+        result = execute_query(query, tuple(params) if params else None)
+        
+        # Log para depuração do resultado
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"SQLite Cloud query result count: {len(result) if result else 0}")
+        if result and len(result) > 0:
+            logger.info(f"First ID: {result[0][0]}")
+            
+        return result
     
     # Se não estiver usando SQLite Cloud, retorna None para usar o ORM normal
     return None
