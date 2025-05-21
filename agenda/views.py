@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.conf import settings
 from agenda.utils import get_agenda_items
+import logging
 
 
 
@@ -81,6 +82,10 @@ class AgendaForm(forms.ModelForm):
         )
 
 def index(request, methods=["GET", "POST"]):
+    # Debug log to check SQLiteCloud status
+    logger = logging.getLogger(__name__)
+    logger.info(f"SQLiteCloud enabled: {settings.SQLITECLOUD_ENABLED}")
+    
     # Tentar obter dados do SQLite Cloud se estiver habilitado
     if settings.SQLITECLOUD_ENABLED:
         # Obter parâmetros de paginação
@@ -149,6 +154,12 @@ def index(request, methods=["GET", "POST"]):
         'is_cloud': settings.SQLITECLOUD_ENABLED
     }
     
+    # Debug log para verificar o contexto enviado ao template
+    logger.info(f"Context is_cloud: {contexto['is_cloud']}")
+    logger.info(f"Page obj type: {type(page_obj)}")
+    if not settings.SQLITECLOUD_ENABLED and page_obj and hasattr(page_obj, 'object_list'):
+        logger.info(f"First object type: {type(page_obj.object_list[0]) if page_obj.object_list else 'No objects'}")
+    
     return render(
         request, 
         'agenda/index.html', 
@@ -210,6 +221,10 @@ def cadastro(request, cadastro_id):
 def pesquisa(request):
     from django.conf import settings
     from agenda.utils import get_agenda_items
+    
+    # Debug log to check SQLiteCloud status
+    logger = logging.getLogger(__name__)
+    logger.info(f"SQLiteCloud enabled (pesquisa): {settings.SQLITECLOUD_ENABLED}")
     
     pesquisa_valor = request.GET.get('q', '').strip()
     
@@ -289,6 +304,9 @@ def pesquisa(request):
         'pesquisa_valor': pesquisa_valor,
         'is_cloud': settings.SQLITECLOUD_ENABLED
     }
+    
+    # Debug log para verificar o contexto enviado ao template
+    logger.info(f"Pesquisa context is_cloud: {contexto['is_cloud']}")
     
     return render(
         request, 

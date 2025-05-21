@@ -30,33 +30,59 @@
                 <tr class="table-row">
                 <td class="table-cel">
                     {% if is_cloud %}
-                        <a class="table-link" href="{% url 'cadastro_alt' cadastro.0 %}">
-                            {{cadastro.0}}
-                        </a>
+                        {% if cadastro.0 %}
+                            <a class="table-link" href="{% url 'cadastro_alt' cadastro.0 %}">
+                                {{cadastro.0}}
+                            </a>
+                        {% else %}
+                            <span>ID inválido</span>
+                        {% endif %}
                     {% else %}
-                        <a class="table-link" href="{% url 'cadastro' cadastro.0 %}">
-                            {{cadastro.0}}
-                        </a>
+                        {% if cadastro.id %}
+                            <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
+                                {{cadastro.id}}
+                            </a>
+                        {% else %}
+                            <span>ID inválido</span>
+                        {% endif %}
                     {% endif %}
                 </td>
-                <td>{{cadastro.1}}</td>
-                <td>{{cadastro.2}}</td>
-                <td>{{cadastro.4}}</td>
-                <td>{{cadastro.6}}</td>
-                <td>{{cadastro.7}}</td>
-                <td>{{cadastro.8}}</td>
+                {% if is_cloud %}
+                    <td>{{cadastro.1}}</td>
+                    <td>{{cadastro.2}}</td>
+                    <td>{{cadastro.4}}</td>
+                    <td>{{cadastro.6}}</td>
+                    <td>{{cadastro.7}}</td>
+                    <td>{{cadastro.8}}</td>
+                {% else %}
+                    <td>{{cadastro.nome}}</td>
+                    <td>{{cadastro.sobrenome}}</td>
+                    <td>{{cadastro.contato}}</td>
+                    <td>{{cadastro.descricao_servico}}</td>
+                    <td>{{cadastro.data_hora}}</td>
+                    <td>{{cadastro.valor}}</td>
+                {% endif %}
+                </tr>
             {% empty %}
                 {% for cadastro in page_obj %}
                 <tr class="table-row">
                 <td class="table-cel">
                     {% if is_cloud %}
-                        <a class="table-link" href="{% url 'cadastro_alt' cadastro.id %}">
-                            {{cadastro.id}}
-                        </a>
+                        {% if cadastro.id %}
+                            <a class="table-link" href="{% url 'cadastro_alt' cadastro.id %}">
+                                {{cadastro.id}}
+                            </a>
+                        {% else %}
+                            <span>ID inválido</span>
+                        {% endif %}
                     {% else %}
-                        <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
-                            {{cadastro.id}}
-                        </a>
+                        {% if cadastro.id %}
+                            <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
+                                {{cadastro.id}}
+                            </a>
+                        {% else %}
+                            <span>ID inválido</span>
+                        {% endif %}
                     {% endif %}
                 </td>
                 <td>{{cadastro.nome}}</td>
@@ -65,9 +91,11 @@
                 <td>{{cadastro.descricao_servico}}</td>
                 <td>{{cadastro.data_hora}}</td>
                 <td>{{cadastro.valor}}</td>
+                </tr>
                 {% endfor %}
             {% endfor %}    
             </tbody>
+        </table>
         </div>
     {% else %}
     <div class="single-contact">

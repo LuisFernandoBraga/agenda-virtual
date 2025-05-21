@@ -96,12 +96,18 @@ SQLITECLOUD_CONNECTION_STRING = os.environ.get(
     "sqlitecloud://cixo5xlahz.g2.sqlite.cloud:8860/db.sqlite3?apikey=MqpRdbbYgBSYzHjjMHWUjnbAPkuNQ7bInQkxkw2bHbg"
 )
 
-# Forçar SQLite Cloud em ambiente Vercel
-if IS_VERCEL:
-    os.environ['SQLITECLOUD_ENABLED'] = 'True'
-
 # Força a configuração do SQLite Cloud
 SQLITECLOUD_ENABLED = os.environ.get('SQLITECLOUD_ENABLED', 'False') == 'True'
+
+# Forçar desativar SQLite Cloud em ambiente local a menos que especificamente habilitado
+if not IS_VERCEL:
+    SQLITECLOUD_ENABLED = os.environ.get('FORCE_SQLITECLOUD', 'False') == 'True'
+else:
+    # No Vercel, sempre usar SQLite Cloud
+    SQLITECLOUD_ENABLED = True
+
+# Debug da configuração do SQLite Cloud
+print(f"SQLiteCloud Enabled: {SQLITECLOUD_ENABLED}, IS_VERCEL: {IS_VERCEL}")
 
 if IS_VERCEL:
     # Configuração de banco de dados para Vercel (usar SQLite na memória)
