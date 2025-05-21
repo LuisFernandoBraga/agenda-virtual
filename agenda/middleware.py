@@ -4,6 +4,7 @@ Middleware para gerenciar a conexão com o SQLite Cloud.
 from django.conf import settings
 from agenda.cloud_db import close_connection, execute_query
 import logging
+from django.forms import forms
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,8 @@ class SqliteCloudConnectionMiddleware:
         if settings.IS_VERCEL and settings.SQLITECLOUD_ENABLED and request.path.startswith('/admin/'):
             self.patch_content_type_for_admin()
             self.patch_model_choice_field()
+            self.patch_admin_widgets()
+            self.patch_model_form_meta()
         
         # Chama a view
         response = self.get_response(request)
@@ -118,16 +121,27 @@ class SqliteCloudConnectionMiddleware:
                     # Tenta o método normal primeiro
                     return original_get_choices(self)
                 except OperationalError as e:
-                    if 'no such table' in str(e).lower():
+                    error_message = str(e).lower()
+                    if 'no such table' in error_message:
                         # Se a tabela não existir, tenta obter de SQLite Cloud
                         model = self.queryset.model
-                        table_name = f"agenda_{model._meta.model_name}"
+                        
+                        # Tratamento especial para o modelo User
+                        if model.__name__ == 'User':
+                            table_name = 'auth_user'
+                            id_field = 'id'
+                            label_field = 'username'
+                        else:
+                            # Para outros modelos, inferir o nome da tabela a partir do modelo
+                            table_name = f"agenda_{model._meta.model_name}"
+                            id_field = 'id'
+                            label_field = 'nome'
                         
                         try:
                             from agenda.cloud_db import execute_query
                             
                             # Obter todos os registros da tabela
-                            query = f"SELECT id, nome FROM {table_name} ORDER BY nome"
+                            query = f"SELECT {id_field}, {label_field} FROM {table_name} ORDER BY {label_field}"
                             results = execute_query(query)
                             
                             if results:
@@ -155,3 +169,97 @@ class SqliteCloudConnectionMiddleware:
         except Exception as e:
             logger.error(f"Erro ao patchar ModelChoiceField: {e}")
             return None 
+
+    def patch_admin_widgets(self):
+        """
+        Patcha o RelatedFieldWidgetWrapper do Django admin para trabalhar com SQLite Cloud.
+        """
+        try:
+            from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
+            
+            # Verificar se já foi patcheado
+            if hasattr(RelatedFieldWidgetWrapper, '_cloud_patched'):
+                return
+            
+            # Guardar o método original
+            original_get_context = RelatedFieldWidgetWrapper.get_context
+            
+            def cloud_get_context(self, name, value, attrs):
+                """
+                Versão patcheada do get_context para evitar consultas ao banco local.
+                """
+                try:
+                    return original_get_context(self, name, value, attrs)
+                except OperationalError as e:
+                    if 'no such table' in str(e).lower():
+                        # Se a tabela não existir, cria um contexto mínimo sem consultar o banco
+                        context = self.widget.get_context(name, value, attrs)
+                        context['widget']['is_hidden'] = self.is_hidden
+                        context['widget']['needs_multipart_form'] = self.needs_multipart_form
+                        context['widget']['name'] = name
+                        context['widget']['is_relation'] = True
+                        
+                        # Desativar os links de adicionar/editar/excluir
+                        context['widget']['can_add_related'] = False
+                        context['widget']['can_change_related'] = False
+                        context['widget']['can_delete_related'] = False
+                        
+                        logger.info(f"RelatedFieldWidgetWrapper: criando contexto mínimo para {name}")
+                        return context
+                    raise
+            
+            # Aplicar o patch
+            RelatedFieldWidgetWrapper.get_context = cloud_get_context
+            RelatedFieldWidgetWrapper._cloud_patched = True
+            
+            logger.info("RelatedFieldWidgetWrapper patcheado com sucesso")
+        except Exception as e:
+            logger.error(f"Erro ao patchar RelatedFieldWidgetWrapper: {e}") 
+
+    def patch_model_form_meta(self):
+        """
+        Patcha o ModelFormMetaclass para evitar consultas de banco de dados problemáticas.
+        """
+        try:
+            from django.forms.models import ModelFormMetaclass
+            from django.db import OperationalError
+            
+            # Verificar se já foi patcheado
+            if hasattr(ModelFormMetaclass, '_cloud_patched'):
+                return
+            
+            # Armazenar a versão original do método
+            original_new = ModelFormMetaclass.__new__
+            
+            def patched_new(mcs, name, bases, attrs):
+                """
+                Versão patcheada do __new__ para evitar consultas problematicas no SQLite Cloud.
+                """
+                try:
+                    # Tentar a versão original primeiro
+                    return original_new(mcs, name, bases, attrs)
+                except OperationalError as e:
+                    if 'no such table' in str(e).lower():
+                        logger.error(f"Erro de banco de dados ao criar formulário {name}: {e}")
+                        
+                        # Tentar criar uma versão mais básica do formulário
+                        # que não dependa de consultas ao banco
+                        if 'Meta' in attrs and hasattr(attrs['Meta'], 'model'):
+                            # Marca que este é um formulário de contingência
+                            attrs['_is_fallback_form'] = True
+                            
+                            # Simplesmente crie um Form regular sem modelagem
+                            form_class = type(name, (forms.Form,), attrs)
+                            logger.info(f"Criado formulário de fallback para {name}")
+                            return form_class
+                        
+                    # Se não podemos resolver, propagar a exceção
+                    raise
+            
+            # Aplicar o patch
+            ModelFormMetaclass.__new__ = patched_new
+            ModelFormMetaclass._cloud_patched = True
+            
+            logger.info("ModelFormMetaclass patcheado com sucesso")
+        except Exception as e:
+            logger.error(f"Erro ao patchar ModelFormMetaclass: {e}") 
