@@ -33,7 +33,9 @@ try:
     conn = sqlitecloud.connect(connection_string)
     cursor = conn.cursor()
     
-    # Verificar se a tabela django_content_type existe
+    # === Verificar e criar Tabelas Essenciais ===
+    
+    # 1. Verificar se a tabela django_content_type existe
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='django_content_type'")
     content_type_exists = cursor.fetchone() is not None
     
@@ -93,12 +95,99 @@ try:
             conn.commit()
             print("Content types da agenda adicionados!")
     
+    # 2. Verificar se as tabelas agenda_genero e agenda_faixa_etaria existem
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='agenda_genero'")
+    genero_exists = cursor.fetchone() is not None
+    
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='agenda_faixa_etaria'")
+    faixa_etaria_exists = cursor.fetchone() is not None
+    
+    # Criar tabela agenda_genero se não existir
+    if not genero_exists:
+        print("Criando tabela agenda_genero...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agenda_genero (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome VARCHAR(100) NOT NULL
+        )
+        """)
+        
+        # Adicionar valores padrão
+        generos = ['Masculino', 'Feminino', 'Não-binário', 'Outro']
+        for genero in generos:
+            cursor.execute("INSERT INTO agenda_genero (nome) VALUES (?)", (genero,))
+        
+        conn.commit()
+        print("Tabela agenda_genero criada e populada com sucesso!")
+    else:
+        print("Tabela agenda_genero já existe.")
+        
+        # Verificar se tem dados
+        cursor.execute("SELECT COUNT(*) FROM agenda_genero")
+        genero_count = cursor.fetchone()[0]
+        
+        if genero_count == 0:
+            print("Populando agenda_genero com valores padrão...")
+            generos = ['Masculino', 'Feminino', 'Não-binário', 'Outro']
+            for genero in generos:
+                cursor.execute("INSERT INTO agenda_genero (nome) VALUES (?)", (genero,))
+            
+            conn.commit()
+            print("Dados de gênero inseridos com sucesso!")
+    
+    # Criar tabela agenda_faixa_etaria se não existir
+    if not faixa_etaria_exists:
+        print("Criando tabela agenda_faixa_etaria...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agenda_faixa_etaria (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome VARCHAR(100) NOT NULL
+        )
+        """)
+        
+        # Adicionar valores padrão
+        faixas = ['Criança (0-12)', 'Adolescente (13-17)', 'Adulto (18-59)', 'Idoso (60+)']
+        for faixa in faixas:
+            cursor.execute("INSERT INTO agenda_faixa_etaria (nome) VALUES (?)", (faixa,))
+        
+        conn.commit()
+        print("Tabela agenda_faixa_etaria criada e populada com sucesso!")
+    else:
+        print("Tabela agenda_faixa_etaria já existe.")
+        
+        # Verificar se tem dados
+        cursor.execute("SELECT COUNT(*) FROM agenda_faixa_etaria")
+        faixa_count = cursor.fetchone()[0]
+        
+        if faixa_count == 0:
+            print("Populando agenda_faixa_etaria com valores padrão...")
+            faixas = ['Criança (0-12)', 'Adolescente (13-17)', 'Adulto (18-59)', 'Idoso (60+)']
+            for faixa in faixas:
+                cursor.execute("INSERT INTO agenda_faixa_etaria (nome) VALUES (?)", (faixa,))
+            
+            conn.commit()
+            print("Dados de faixa etária inseridos com sucesso!")
+    
     # Verificar quais content types existem
     cursor.execute("SELECT id, app_label, model FROM django_content_type")
     content_types = cursor.fetchall()
     print("\nContentTypes disponíveis:")
     for ct in content_types:
         print(f"ID: {ct[0]}, App: {ct[1]}, Model: {ct[2]}")
+        
+    # Verificar gêneros disponíveis
+    cursor.execute("SELECT id, nome FROM agenda_genero")
+    generos = cursor.fetchall()
+    print("\nGêneros disponíveis:")
+    for g in generos:
+        print(f"ID: {g[0]}, Nome: {g[1]}")
+        
+    # Verificar faixas etárias disponíveis
+    cursor.execute("SELECT id, nome FROM agenda_faixa_etaria")
+    faixas = cursor.fetchall()
+    print("\nFaixas etárias disponíveis:")
+    for f in faixas:
+        print(f"ID: {f[0]}, Nome: {f[1]}")
         
     # Fechar conexão
     conn.close()

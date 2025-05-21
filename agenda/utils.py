@@ -81,6 +81,13 @@ def create_agenda_item(data):
         genero_id = data.get('genero')
         faixa_etaria_id = data.get('faixa_etaria')
         
+        # Converter para int se for string
+        if genero_id and isinstance(genero_id, str) and genero_id.isdigit():
+            genero_id = int(genero_id)
+        
+        if faixa_etaria_id and isinstance(faixa_etaria_id, str) and faixa_etaria_id.isdigit():
+            faixa_etaria_id = int(faixa_etaria_id)
+        
         # Campos de imagem requerem tratamento especial
         imagem_path = ''
         if 'imagem' in data and hasattr(data['imagem'], 'name'):
@@ -135,6 +142,13 @@ def update_agenda_item(data, item_id):
         # Preparar os dados para atualização
         genero_id = data.get('genero')
         faixa_etaria_id = data.get('faixa_etaria')
+        
+        # Converter para int se for string
+        if genero_id and isinstance(genero_id, str) and genero_id.isdigit():
+            genero_id = int(genero_id)
+        
+        if faixa_etaria_id and isinstance(faixa_etaria_id, str) and faixa_etaria_id.isdigit():
+            faixa_etaria_id = int(faixa_etaria_id)
         
         # Campos de imagem requerem tratamento especial
         imagem_path = ''

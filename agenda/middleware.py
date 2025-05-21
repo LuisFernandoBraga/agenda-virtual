@@ -22,6 +22,7 @@ class SqliteCloudConnectionMiddleware:
         # Se estivermos no admin e com SQLiteCloud ativado no Vercel, patchar o ContentType
         if settings.IS_VERCEL and settings.SQLITECLOUD_ENABLED and request.path.startswith('/admin/'):
             self.patch_content_type_for_admin()
+            self.patch_model_choice_field()
         
         # Chama a view
         response = self.get_response(request)
@@ -91,3 +92,66 @@ class SqliteCloudConnectionMiddleware:
             
         except Exception as e:
             logger.error(f"Erro ao patchar ContentType: {e}") 
+
+    def patch_model_choice_field(self):
+        """
+        Patcha o ModelChoiceField para usar uma versão personalizada quando não conseguir 
+        carregar dados do banco de dados em memória (casos como 'no such table').
+        """
+        try:
+            from django.forms.models import ModelChoiceField
+            from django.db import OperationalError
+            
+            # Verificar se já foi patcheado
+            if hasattr(ModelChoiceField, '_cloud_patched'):
+                return
+            
+            # Guardar o método original
+            original_get_choices = ModelChoiceField._get_choices
+            
+            def cloud_get_choices(self):
+                """
+                Versão patcheada do _get_choices que tenta usar o SQLite Cloud
+                quando não consegue obter os dados do banco local.
+                """
+                try:
+                    # Tenta o método normal primeiro
+                    return original_get_choices(self)
+                except OperationalError as e:
+                    if 'no such table' in str(e).lower():
+                        # Se a tabela não existir, tenta obter de SQLite Cloud
+                        model = self.queryset.model
+                        table_name = f"agenda_{model._meta.model_name}"
+                        
+                        try:
+                            from agenda.cloud_db import execute_query
+                            
+                            # Obter todos os registros da tabela
+                            query = f"SELECT id, nome FROM {table_name} ORDER BY nome"
+                            results = execute_query(query)
+                            
+                            if results:
+                                logger.info(f"Obteve {len(results)} opções de {table_name} via SQLite Cloud")
+                                
+                                # Converter para o formato esperado pelo ModelChoiceField
+                                from django.utils.datastructures import MultiValueDict
+                                choices = [(self.prepare_value(None), self.empty_label)]
+                                for item_id, nome in results:
+                                    choices.append((str(item_id), nome))
+                                    
+                                return choices
+                        except Exception as ex:
+                            logger.error(f"Erro ao obter opções do SQLite Cloud: {ex}")
+                    
+                    # Se tudo falhar, retorna uma lista vazia (ou propaga a exceção original)
+                    return [(None, self.empty_label)]
+            
+            # Aplicar o patch
+            ModelChoiceField._get_choices = cloud_get_choices
+            ModelChoiceField._cloud_patched = True
+            
+            logger.info("ModelChoiceField patcheado com sucesso para uso com SQLite Cloud")
+            
+        except Exception as e:
+            logger.error(f"Erro ao patchar ModelChoiceField: {e}")
+            return None 

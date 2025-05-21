@@ -6,10 +6,67 @@ from django.db import OperationalError
 import logging
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django import forms
 
 logger = logging.getLogger(__name__)
 
+class AgendaAdminForm(forms.ModelForm):
+    """Custom form for Agenda admin that uses direct SQLite Cloud queries for foreign keys."""
+    
+    class Meta:
+        model = Agenda
+        fields = '__all__'
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # If using SQLite Cloud in Vercel, replace the ModelChoiceField for foreign keys
+        if settings.IS_VERCEL and settings.SQLITECLOUD_ENABLED:
+            logger.info("Using CloudModelChoiceField for AgendaAdminForm")
+            
+            try:
+                # Import here to avoid circular imports
+                from agenda.cloud_forms import CloudModelChoiceField
+                
+                # Replace the genero field
+                choices = self._get_choices_from_sqlitecloud('agenda_genero')
+                self.fields['genero'] = forms.ChoiceField(
+                    choices=[('', '---------')] + choices, 
+                    required=False,
+                    label=self.fields['genero'].label
+                )
+                
+                # Replace the faixa_etaria field
+                choices = self._get_choices_from_sqlitecloud('agenda_faixa_etaria')
+                self.fields['faixa_etaria'] = forms.ChoiceField(
+                    choices=[('', '---------')] + choices, 
+                    required=False,
+                    label=self.fields['faixa_etaria'].label
+                )
+                
+                # Set initial values
+                if self.instance and self.instance.pk:
+                    if self.instance.genero_id:
+                        self.initial['genero'] = self.instance.genero_id
+                    if self.instance.faixa_etaria_id:
+                        self.initial['faixa_etaria'] = self.instance.faixa_etaria_id
+                
+            except Exception as e:
+                logger.error(f"Error setting up CloudModelChoiceField: {e}")
+    
+    def _get_choices_from_sqlitecloud(self, table_name, value_field='id', label_field='nome'):
+        """Helper method to get choices from SQLite Cloud."""
+        try:
+            from agenda.cloud_db import execute_query
+            query = f"SELECT {value_field}, {label_field} FROM {table_name} ORDER BY {label_field}"
+            results = execute_query(query)
+            return [(str(item[0]), item[1]) for item in results] if results else []
+        except Exception as e:
+            logger.error(f"Error fetching choices from SQLite Cloud for {table_name}: {e}")
+            return []
+
 class AgendaAdmin(admin.ModelAdmin):
+    form = AgendaAdminForm
     list_display = ('id', 'nome', 'sobrenome', 'contato', 'data_hora', 'valor')
     list_display_links = ('nome',)
     search_fields = ('nome', 'sobrenome', 'contato')
@@ -42,10 +99,14 @@ class AgendaAdmin(admin.ModelAdmin):
                 from agenda.utils import create_agenda_item, update_agenda_item
                 
                 # Converter o objeto do formulário em um dicionário para as funções do SQLiteCloud
-                data = {}
-                for field in form.fields:
-                    if field in form.cleaned_data:
-                        data[field] = form.cleaned_data[field]
+                data = form.cleaned_data.copy()
+                
+                # Convert genero and faixa_etaria from string to int if needed
+                if 'genero' in data and data['genero']:
+                    data['genero'] = int(data['genero'])
+                
+                if 'faixa_etaria' in data and data['faixa_etaria']:
+                    data['faixa_etaria'] = int(data['faixa_etaria'])
                 
                 if change:  # Atualizando um existente
                     update_agenda_item(data, obj.id)

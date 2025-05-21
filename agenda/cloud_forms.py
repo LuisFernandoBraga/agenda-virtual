@@ -5,6 +5,42 @@ from django import forms
 from django.conf import settings
 from agenda.models import Agenda
 from agenda.cloud_db import execute_query
+import logging
+
+logger = logging.getLogger(__name__)
+
+class CloudModelChoiceField(forms.ChoiceField):
+    """
+    A version of ModelChoiceField that fetches choices from SQLite Cloud.
+    """
+    def __init__(self, table_name, value_field='id', label_field='nome', empty_label="---------", *args, **kwargs):
+        self.table_name = table_name
+        self.value_field = value_field
+        self.label_field = label_field
+        
+        # Get choices from SQLite Cloud
+        choices = self.get_cloud_choices()
+        
+        # Add empty choice if requested
+        if empty_label is not None:
+            choices = [(None, empty_label)] + choices
+            
+        super().__init__(choices=choices, *args, **kwargs)
+    
+    def get_cloud_choices(self):
+        try:
+            query = f"SELECT {self.value_field}, {self.label_field} FROM {self.table_name} ORDER BY {self.label_field}"
+            results = execute_query(query)
+            
+            # Convert results to choices format
+            choices = [(str(item[0]), item[1]) for item in results] if results else []
+            
+            logger.info(f"CloudModelChoiceField: Got {len(choices)} choices for {self.table_name}")
+            
+            return choices
+        except Exception as e:
+            logger.error(f"Error fetching choices from SQLite Cloud for {self.table_name}: {e}")
+            return []
 
 class CloudAgendaForm(forms.Form):
     """Versão do AgendaForm que funciona com SQLite Cloud.
@@ -77,8 +113,8 @@ class CloudAgendaForm(forms.Form):
     )
     
     # Campos de chave estrangeira adaptados para o SQLite Cloud
-    genero = forms.ChoiceField(choices=[], required=False)
-    faixa_etaria = forms.ChoiceField(choices=[], required=False)
+    genero = CloudModelChoiceField(table_name='agenda_genero', required=False)
+    faixa_etaria = CloudModelChoiceField(table_name='agenda_faixa_etaria', required=False)
     
     def __init__(self, *args, **kwargs):
         # Remover instance para evitar conflito com Form (vs ModelForm)
@@ -96,20 +132,6 @@ class CloudAgendaForm(forms.Form):
                         self.initial[field_name] = str(field_value.id)
                     else:
                         self.initial[field_name] = field_value
-        
-        # Se o SQLite Cloud estiver habilitado, preenchemos as opções dos campos de seleção
-        if settings.SQLITECLOUD_ENABLED:
-            # Obter opções de gênero do SQLite Cloud
-            generos = execute_query("SELECT id, nome FROM agenda_genero ORDER BY nome")
-            genero_choices = [(str(g[0]), g[1]) for g in generos] if generos else []
-            genero_choices.insert(0, ('', '---------'))  # Opção vazia
-            self.fields['genero'].choices = genero_choices
-            
-            # Obter opções de faixa etária do SQLite Cloud
-            faixas = execute_query("SELECT id, nome FROM agenda_faixa_etaria ORDER BY nome")
-            faixa_choices = [(str(f[0]), f[1]) for f in faixas] if faixas else []
-            faixa_choices.insert(0, ('', '---------'))  # Opção vazia
-            self.fields['faixa_etaria'].choices = faixa_choices
     
     def save(self, commit=True):
         """
