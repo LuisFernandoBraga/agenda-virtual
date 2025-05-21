@@ -24,7 +24,7 @@
         <h2>{% translate 'Recent actions' %}</h2>
         <h3>{% translate 'My actions' %}</h3>
         {% if user.is_authenticated %}
-            {% if settings.SQLITECLOUD_ENABLED %}
+            {% if SQLITECLOUD_ENABLED %}
                 {% get_admin_log_from_cloud 10 user as admin_log %}
             {% else %}
                 {% load log %}
