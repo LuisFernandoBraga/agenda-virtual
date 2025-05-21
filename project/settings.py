@@ -102,23 +102,14 @@ if IS_VERCEL:
 SQLITECLOUD_ENABLED = os.environ.get('SQLITECLOUD_ENABLED', 'False') == 'True'
 
 if IS_VERCEL:
-    # Configuração para ambiente serverless (Vercel)
-    
-    # Usar SQLite na memória apenas para manter a compatibilidade com código que precisa do ORM
+    # Configuração de banco de dados para Vercel (usar SQLite na memória)
+    # Isso evita que o Django tente acessar um arquivo no sistema de arquivos
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': ':memory:',  # SQLite database in-memory
         }
     }
-    
-    # Usar nosso backend de sessão personalizado para evitar acessos ao banco
-    SESSION_ENGINE = 'agenda.session_backend'
-    SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
-    SESSION_COOKIE_NAME = 'agendavirtual_sessionid'
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_AGE = 86400 * 7  # 7 dias
-    SESSION_COOKIE_SECURE = True  # Cookies HTTPS apenas
     
     # Arquivo para gerenciar conexão com SQLite Cloud
     SQLITECLOUD_ENABLED = True
