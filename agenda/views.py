@@ -155,11 +155,50 @@ def index(request, methods=["GET", "POST"]):
     )
 
 def cadastro(request, cadastro_id):
-    inserir_cadastro = Agenda.objects.get(pk=cadastro_id)
+    if settings.SQLITECLOUD_ENABLED:
+        from agenda.cloud_db import execute_query
+        # Obter dados do SQLite Cloud
+        query = """
+        SELECT 
+            a.id, a.nome, a.sobrenome, a.cpf, a.email, a.contato,
+            a.descricao_servico, a.data_hora, a.valor, a.show,
+            a.imagem, g.nome as genero_nome, f.nome as faixa_etaria_nome
+        FROM agenda_agenda a
+        LEFT JOIN agenda_genero g ON a.genero_id = g.id
+        LEFT JOIN agenda_faixa_etaria f ON a.faixa_etaria_id = f.id
+        WHERE a.id = ?
+        """
+        result = execute_query(query, (cadastro_id,))
+        
+        if not result:
+            # Registro não encontrado
+            return redirect('index')
+        
+        # Criar um objeto similar ao modelo para usar no template
+        agenda_item = result[0]
+        inserir_cadastro = {
+            'id': agenda_item[0],
+            'nome': agenda_item[1],
+            'sobrenome': agenda_item[2],
+            'cpf': agenda_item[3],
+            'email': agenda_item[4],
+            'contato': agenda_item[5],
+            'descricao_servico': agenda_item[6],
+            'data_hora': agenda_item[7],
+            'valor': agenda_item[8],
+            'show': agenda_item[9],
+            'imagem': agenda_item[10],
+            'genero': agenda_item[11],
+            'faixa_etaria': agenda_item[12]
+        }
+    else:
+        # Método original usando ORM do Django
+        inserir_cadastro = Agenda.objects.get(pk=cadastro_id)
         
     contexto = {
-        'cadastro':inserir_cadastro ,
-        'site_title': 'Cadastro - '
+        'cadastro': inserir_cadastro,
+        'site_title': 'Cadastro - ',
+        'is_cloud': settings.SQLITECLOUD_ENABLED
     }
     return render(
         request,
@@ -273,14 +312,17 @@ def inserir_cadastro(request):
             'form_action': form_action,
         }
 
-        if form.is_valid():
-            if settings.SQLITECLOUD_ENABLED:
+        if settings.SQLITECLOUD_ENABLED:
+            # Validação manual para o SQLite Cloud
+            if form.is_valid():
                 # Usar a função de utilidade para criar o item via SQLite Cloud
                 data = form.cleaned_data
                 create_agenda_item(data)
                 messages.success(request, 'Usuário cadastrado com sucesso!')
                 return redirect('index')
-            else:
+        else:
+            # Validação normal do Django para não-SQLite Cloud
+            if form.is_valid():
                 # Salvar normalmente usando o ORM do Django
                 form.save()
                 messages.success(request, 'Usuário cadastrado com sucesso!')
@@ -309,7 +351,7 @@ def atualiza(request, cadastro_id):
     # Determinar qual formulário usar
     if settings.SQLITECLOUD_ENABLED:
         from agenda.cloud_forms import CloudAgendaForm as FormClass
-        from agenda.utils import execute_update
+        from agenda.utils import update_agenda_item
     else:
         from agenda.views import AgendaForm as FormClass
 
@@ -321,16 +363,17 @@ def atualiza(request, cadastro_id):
             'form_action': form_action,
         }
 
-        if form.is_valid():
-            if settings.SQLITECLOUD_ENABLED:
-                # Implementação simplificada apenas para mostrar a abordagem
-                # Na prática, você precisaria criar uma função específica para atualização
+        if settings.SQLITECLOUD_ENABLED:
+            # Validação manual para o SQLite Cloud
+            if form.is_valid():
+                # Usar a função de utilidade para atualizar o item via SQLite Cloud
                 data = form.cleaned_data
-                cadastro = form.save(commit=False)  # Não salva no banco
-                # Aqui você implementaria a lógica para atualizar no SQLite Cloud
+                update_agenda_item(data, cadastro_id)
                 messages.success(request, 'Cadastro atualizado com sucesso!')
                 return redirect('index')
-            else:
+        else:
+            # Validação normal do Django para não-SQLite Cloud
+            if form.is_valid():
                 # Salvar normalmente usando o ORM do Django
                 cadastro = form.save()
                 messages.success(request, 'Cadastro atualizado com sucesso!')
@@ -353,14 +396,18 @@ def atualiza(request, cadastro_id):
     )
 
 def excluir(request, cadastro_id):
-    cadastro = get_object_or_404(Agenda, pk=cadastro_id, show=True)
-
-    cadastro.delete()
-    messages.warning(request, 'Cadastro excluído com sucesso!')
+    if settings.SQLITECLOUD_ENABLED:
+        from agenda.utils import delete_agenda_item
+        # Excluir via SQLite Cloud
+        delete_agenda_item(cadastro_id)
+        messages.warning(request, 'Cadastro excluído com sucesso!')
+    else:
+        # Método original usando ORM do Django
+        cadastro = get_object_or_404(Agenda, pk=cadastro_id, show=True)
+        cadastro.delete()
+        messages.warning(request, 'Cadastro excluído com sucesso!')
     
-    return redirect(
-       'index'
-    )
+    return redirect('index')
 
 class RegistroForm(UserCreationForm):
     nome = forms.CharField(

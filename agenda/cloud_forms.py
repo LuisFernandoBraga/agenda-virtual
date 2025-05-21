@@ -6,8 +6,9 @@ from django.conf import settings
 from agenda.models import Agenda
 from agenda.cloud_db import execute_query
 
-class CloudAgendaForm(forms.ModelForm):
-    """Versão do AgendaForm que funciona com SQLite Cloud."""
+class CloudAgendaForm(forms.Form):
+    """Versão do AgendaForm que funciona com SQLite Cloud.
+    Usa Form em vez de ModelForm para evitar a validação com ORM."""
     
     # Campos padrão
     imagem = forms.ImageField(
@@ -80,7 +81,21 @@ class CloudAgendaForm(forms.ModelForm):
     faixa_etaria = forms.ChoiceField(choices=[], required=False)
     
     def __init__(self, *args, **kwargs):
+        # Remover instance para evitar conflito com Form (vs ModelForm)
+        self.instance = kwargs.pop('instance', None)
+        
         super().__init__(*args, **kwargs)
+        
+        # Preencher o formulário com os dados da instância, se fornecida
+        if self.instance:
+            for field_name in self.fields:
+                if hasattr(self.instance, field_name):
+                    field_value = getattr(self.instance, field_name)
+                    # Para ForeignKeys, obter o ID
+                    if field_name in ['genero', 'faixa_etaria'] and field_value:
+                        self.initial[field_name] = str(field_value.id)
+                    else:
+                        self.initial[field_name] = field_value
         
         # Se o SQLite Cloud estiver habilitado, preenchemos as opções dos campos de seleção
         if settings.SQLITECLOUD_ENABLED:
@@ -96,10 +111,12 @@ class CloudAgendaForm(forms.ModelForm):
             faixa_choices.insert(0, ('', '---------'))  # Opção vazia
             self.fields['faixa_etaria'].choices = faixa_choices
     
-    class Meta:
-        model = Agenda
-        fields = (
-            'nome', 'sobrenome', 'cpf', 'email', 'contato', 
-            'descricao_servico', 'data_hora', 'valor', 
-            'genero', 'faixa_etaria', 'imagem',
-        ) 
+    def save(self, commit=True):
+        """
+        Método de compatibilidade para permitir o mesmo comportamento de ModelForm.
+        """
+        if not settings.SQLITECLOUD_ENABLED:
+            raise NotImplementedError("Este método só deve ser chamado em ambiente SQLite Cloud")
+        
+        # No SQLite Cloud, não fazemos nada aqui - apenas retornamos um dicionário de dados
+        return self.cleaned_data 

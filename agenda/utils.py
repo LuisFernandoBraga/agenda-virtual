@@ -109,4 +109,96 @@ def create_agenda_item(data):
         return True
         
     # Se não estiver usando SQLite Cloud, retorna False para usar o ORM normal
+    return False
+
+def update_agenda_item(data, item_id):
+    """
+    Atualiza um item existente da agenda no SQLite Cloud.
+    
+    Args:
+        data (dict): Dados do item de agenda
+        item_id (int): ID do item a ser atualizado
+        
+    Returns:
+        bool: True se foi atualizado com sucesso, False caso contrário
+    """
+    if settings.SQLITECLOUD_ENABLED:
+        # Preparar os dados para atualização
+        genero_id = data.get('genero')
+        faixa_etaria_id = data.get('faixa_etaria')
+        
+        # Campos de imagem requerem tratamento especial
+        imagem_path = ''
+        if 'imagem' in data and hasattr(data['imagem'], 'name'):
+            # Em uma implementação completa, você deve fazer upload do arquivo
+            # para um serviço como S3 e salvar o caminho
+            imagem_path = data['imagem'].name
+        
+        # Formatar a data e hora
+        data_hora = data.get('data_hora', '')
+        if hasattr(data_hora, 'strftime'):
+            data_hora = data_hora.strftime('%Y-%m-%d %H:%M:%S')
+        
+        query = """
+        UPDATE agenda_agenda SET
+            nome = ?,
+            sobrenome = ?,
+            cpf = ?,
+            email = ?,
+            contato = ?,
+            descricao_servico = ?,
+            data_hora = ?,
+            valor = ?
+        """
+        
+        params = [
+            data.get('nome', ''),
+            data.get('sobrenome', ''),
+            data.get('cpf', ''),
+            data.get('email', ''),
+            data.get('contato', ''),
+            data.get('descricao_servico', ''),
+            data_hora,
+            data.get('valor', '')
+        ]
+        
+        # Adicionar campos opcionais se fornecidos
+        if imagem_path:
+            query += ", imagem = ?"
+            params.append(imagem_path)
+            
+        if genero_id:
+            query += ", genero_id = ?"
+            params.append(genero_id)
+            
+        if faixa_etaria_id:
+            query += ", faixa_etaria_id = ?"
+            params.append(faixa_etaria_id)
+        
+        # Finalizar a query com a condição WHERE
+        query += " WHERE id = ?"
+        params.append(item_id)
+        
+        execute_update(query, tuple(params))
+        return True
+        
+    # Se não estiver usando SQLite Cloud, retorna False
+    return False
+
+def delete_agenda_item(item_id):
+    """
+    Exclui um item da agenda no SQLite Cloud.
+    
+    Args:
+        item_id (int): ID do item a ser excluído
+        
+    Returns:
+        bool: True se foi excluído com sucesso, False caso contrário
+    """
+    if settings.SQLITECLOUD_ENABLED:
+        query = "DELETE FROM agenda_agenda WHERE id = ?"
+        execute_update(query, (item_id,))
+        return True
+        
+    # Se não estiver usando SQLite Cloud, retorna False
     return False 
