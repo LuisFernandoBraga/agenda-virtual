@@ -136,19 +136,11 @@ elif 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQ
     
     SQLITECLOUD_ENABLED = False
 else:
-    # Configuração para desenvolvimento local
+    # Configuração para desenvolvimento local (SQLite)
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'agenda_virtual',
-            'USER': 'wellmmer@gmail.com',
-            'PASSWORD': 'torvalds2104@WLOP',
-            'HOST': 'localhost',
-            'PORT': '3306',
-            'OPTIONS':  {
-                'charset': 'utf8mb4',
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            } 
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
     
