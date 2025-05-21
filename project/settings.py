@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2by@5k=4eo(sifou3_z)%n8v(0_=ii4zo1y91dazh-^ro#oa@&'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-2by@5k=4eo(sifou3_z)%n8v(0_=ii4zo1y91dazh-^ro#oa@&')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app']
 
 
 # Application definition
@@ -48,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'agenda.middleware.SqliteCloudConnectionMiddleware',
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -76,38 +79,57 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-'''DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}'''
+# Verificar se está em ambiente de produção (Vercel)
+IS_VERCEL = os.environ.get('VERCEL', '') == '1'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'agenda_virtual',
-        'USER': 'luisfernando',
-        'PASSWORD': '32811880',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS':  {
-        'charset': 'utf8mb4',
-        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        } 
-    }
-}
+# SQLite Cloud connection string
+SQLITECLOUD_CONNECTION_STRING = os.environ.get(
+    'SQLITECLOUD_CONNECTION_STRING',
+    "sqlitecloud://cixo5xlahz.g2.sqlite.cloud:8860/db.sqlite3?apikey=MqpRdbbYgBSYzHjjMHWUjnbAPkuNQ7bInQkxkw2bHbg"
+)
 
-# Configuração para o banco de dados de teste
-import sys
-import os
-if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE_FOR_TESTS') == 'True':
+if IS_VERCEL:
+    # Configuração de banco de dados para Vercel (usar SQLite Cloud)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'db.sqlite3',
+            'OPTIONS': {
+                'uri': True,
+            },
+        }
+    }
+    
+    # Arquivo para gerenciar conexão com SQLite Cloud
+    SQLITECLOUD_ENABLED = True
+elif 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE_FOR_TESTS') == 'True':
+    # Configuração para testes
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'test_db.sqlite3',
         }
     }
+    
+    SQLITECLOUD_ENABLED = False
+else:
+    # Configuração para desenvolvimento local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'agenda_virtual',
+            'USER': 'wellmmer@gmail.com',
+            'PASSWORD': 'torvalds2104@WLOP',
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS':  {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            } 
+        }
+    }
+    
+    SQLITECLOUD_ENABLED = False
 
 
 # Password validation
@@ -145,13 +167,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = (
+STATICFILES_DIRS = [
     BASE_DIR / 'base_static',
-)
-STATIC_ROOT = BASE_DIR / 'static'
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

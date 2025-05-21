@@ -1,5 +1,5 @@
 {% extends 'global/base.html' %}
-
+{% load static %}
 
 {% block content %}
 <h1 style="text-align: center";>Área do Profissional</h1>
@@ -21,7 +21,21 @@
                 </tr>
             </thead>
             <tbody>
-            {% for cadastro in page_obj %}
+            {% for cadastro in page_obj.object_list %}
+                <tr class="table-row">
+                <td class="table-cel">
+                    <a class="table-link" href="{% url 'cadastro' cadastro.0 %}">
+                        {{cadastro.0}}
+                    </a>
+                </td>
+                <td>{{cadastro.1}}</td>
+                <td>{{cadastro.2}}</td>
+                <td>{{cadastro.4}}</td>
+                <td>{{cadastro.6}}</td>
+                <td>{{cadastro.7}}</td>
+                <td>{{cadastro.8}}</td>
+            {% empty %}
+                {% for cadastro in page_obj %}
                 <tr class="table-row">
                 <td class="table-cel">
                     <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
@@ -34,6 +48,7 @@
                 <td>{{cadastro.descricao_servico}}</td>
                 <td>{{cadastro.data_hora}}</td>
                 <td>{{cadastro.valor}}</td>
+                {% endfor %}
             {% endfor %}    
             </tbody>
         </div>
@@ -53,6 +68,9 @@
                 {% if page_obj.has_previous %}
                     <a href="?page=1&q={{ request.GET.q.strip }}">&laquo; Primeira</a>
                     <a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q.strip }}">Anterior</a>
+                {% elif page_obj.number > 1 %}
+                    <a href="?page=1&q={{ request.GET.q.strip }}">&laquo; Primeira</a>
+                    <a href="?page={{ page_obj.number|add:"-1" }}&q={{ request.GET.q.strip }}">Anterior</a>
                 {% endif %}
     
                 <span class="current">
@@ -61,6 +79,9 @@
     
                 {% if page_obj.has_next %}
                     <a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q.strip }}">Próxima</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}&q={{ request.GET.q.strip }}">Última &raquo;</a>
+                {% elif page_obj.number < page_obj.paginator.num_pages %}
+                    <a href="?page={{ page_obj.number|add:"1" }}&q={{ request.GET.q.strip }}">Próxima</a>
                     <a href="?page={{ page_obj.paginator.num_pages }}&q={{ request.GET.q.strip }}">Última &raquo;</a>
                 {% endif %}
             </span>

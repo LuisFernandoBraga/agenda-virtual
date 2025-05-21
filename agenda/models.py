@@ -47,11 +47,11 @@ class Agenda(models.Model):
         on_delete=models.SET_NULL,
         blank=True, null=True
     )
-    '''proprietario = models.ForeignKey(
+    proprietario = models.ForeignKey(
         User, 
         on_delete=models.SET_NULL,
         blank=True, null=True
-    )'''
+    )
     
     def __str__(self) -> str:
         return f'{self.nome} {self.sobrenome}'

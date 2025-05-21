@@ -138,3 +138,43 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+
+# Ambiente virtual
+venv/
+env/
+.env
+.env.local
+
+# Arquivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.mo
+*.pot
+
+# Banco de dados
+db.sqlite3
+test_db.sqlite3
+
+# Diretórios de mídia e estáticos
+/media
+/static
+/staticfiles
+
+# Logs e arquivos temporários
+*.log
+*.swp
+*~
+local_settings.py
+
+# Cobertura e testes
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# Ferramentas de deploy
+.vercel
+vercel.json
