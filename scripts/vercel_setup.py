@@ -1,156 +1,109 @@
 #!/usr/bin/env python
 """
-Script para configurar o ambiente na Vercel.
-Este script é uma versão simplificada do populate_sqlitecloud.py,
-sem depender das importações do Django.
+Script de preparação para a Vercel.
+Este script verifica e configura o banco de dados SQLite Cloud para uso com Django.
 """
 import os
+import sys
+
+# Adicionar o diretório raiz ao path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(script_dir)
+sys.path.append(root_dir)
+
+# Configurar o ambiente Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
+os.environ.setdefault('VERCEL', '1')  # Forçar modo Vercel
+
+# Não usar a configuração normal do Django para evitar imports circulares
+# Apenas importar SQLiteCloud diretamente
 import sqlitecloud
-import hashlib
-import base64
-import secrets
 
-def main():
-    # Obter a string de conexão do SQLite Cloud
-    connection_string = os.environ.get(
-        'SQLITECLOUD_CONNECTION_STRING',
-        "sqlitecloud://cixo5xlahz.g2.sqlite.cloud:8860/db.sqlite3?apikey=MqpRdbbYgBSYzHjjMHWUjnbAPkuNQ7bInQkxkw2bHbg"
-    )
+print("Iniciando setup para Vercel com SQLite Cloud...")
+
+# Obter a string de conexão do ambiente ou usar o padrão
+connection_string = os.environ.get(
+    'SQLITECLOUD_CONNECTION_STRING', 
+    "sqlitecloud://cixo5xlahz.g2.sqlite.cloud:8860/db.sqlite3?apikey=MqpRdbbYgBSYzHjjMHWUjnbAPkuNQ7bInQkxkw2bHbg"
+)
+
+try:
+    # Conectar ao SQLite Cloud
+    print(f"Conectando ao SQLite Cloud: {connection_string}")
+    conn = sqlitecloud.connect(connection_string)
+    cursor = conn.cursor()
     
-    try:
-        print("Conectando ao SQLite Cloud...")
-        conn = sqlitecloud.connect(connection_string)
+    # Verificar se a tabela django_content_type existe
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='django_content_type'")
+    content_type_exists = cursor.fetchone() is not None
+    
+    if not content_type_exists:
+        print("Tabela django_content_type não encontrada. Criando...")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS django_content_type (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            app_label VARCHAR(100) NOT NULL,
+            model VARCHAR(100) NOT NULL,
+            CONSTRAINT django_content_type_app_label_model_76bd3d3b_uniq UNIQUE (app_label, model)
+        )
+        """)
         
-        # Criar tabelas (versão simplificada)
-        print("Criando tabelas...")
-        create_tables(conn)
+        # Inserir tipos de conteúdo essenciais para o admin
+        content_types = [
+            ('contenttypes', 'contenttype'),
+            ('auth', 'permission'),
+            ('auth', 'group'),
+            ('auth', 'user'),
+            ('admin', 'logentry'),
+            ('sessions', 'session'),
+            ('agenda', 'agenda'),
+            ('agenda', 'genero'),
+            ('agenda', 'faixa_etaria')
+        ]
         
-        # Adicionar dados iniciais
-        print("Adicionando dados iniciais...")
-        populate_data(conn)
+        for app_label, model in content_types:
+            cursor.execute(
+                "INSERT OR IGNORE INTO django_content_type (app_label, model) VALUES (?, ?)",
+                (app_label, model)
+            )
         
-        conn.close()
-        print("Configuração concluída com sucesso!")
-        return True
-    except Exception as e:
-        print(f"Erro ao configurar o ambiente na Vercel: {e}")
-        return False
-
-def create_tables(conn):
-    # Tabela de usuários
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS auth_user (
-        id INTEGER PRIMARY KEY,
-        password VARCHAR(128) NOT NULL,
-        last_login DATETIME,
-        is_superuser BOOLEAN NOT NULL,
-        username VARCHAR(150) NOT NULL UNIQUE,
-        first_name VARCHAR(150) NOT NULL,
-        last_name VARCHAR(150) NOT NULL,
-        email VARCHAR(254) NOT NULL,
-        is_staff BOOLEAN NOT NULL,
-        is_active BOOLEAN NOT NULL,
-        date_joined DATETIME NOT NULL
-    );
-    ''')
-    
-    # Tabela de gêneros
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS agenda_genero (
-        id INTEGER PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL
-    );
-    ''')
-    
-    # Tabela de faixas etárias
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS agenda_faixa_etaria (
-        id INTEGER PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL
-    );
-    ''')
-    
-    # Tabela de agendamentos
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS agenda_agenda (
-        id INTEGER PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL,
-        sobrenome VARCHAR(100) NOT NULL,
-        cpf VARCHAR(50) NOT NULL,
-        email VARCHAR(50) NOT NULL,
-        contato VARCHAR(50) NOT NULL,
-        descricao_servico TEXT NOT NULL,
-        data_hora DATETIME NOT NULL,
-        valor VARCHAR(50) NOT NULL,
-        show BOOLEAN NOT NULL,
-        imagem VARCHAR(100),
-        genero_id INTEGER,
-        faixa_etaria_id INTEGER,
-        proprietario_id INTEGER,
-        FOREIGN KEY (genero_id) REFERENCES agenda_genero (id),
-        FOREIGN KEY (faixa_etaria_id) REFERENCES agenda_faixa_etaria (id),
-        FOREIGN KEY (proprietario_id) REFERENCES auth_user (id)
-    );
-    ''')
-
-def create_django_password_hash(password, iterations=720000):
-    """
-    Cria um hash de senha no formato PBKDF2 usado pelo Django.
-    Este formato é: pbkdf2_sha256$<iterations>$<salt>$<hash>
-    """
-    salt = secrets.token_hex(8)
-    hash_obj = hashlib.pbkdf2_hmac(
-        'sha256', 
-        password.encode('utf-8'),
-        salt.encode('ascii'),
-        iterations,
-        dklen=32
-    )
-    hash_base64 = base64.b64encode(hash_obj).decode('ascii')
-    
-    return f"pbkdf2_sha256${iterations}${salt}${hash_base64}"
-
-def populate_data(conn):
-    # Adicionar usuário admin
-    admin_exists = conn.execute("SELECT COUNT(*) FROM auth_user WHERE username = 'admin';").fetchone()[0]
-    if admin_exists == 0:
-        # Criar hash para a senha 'admin123'
-        password_hash = create_django_password_hash('admin123')
+        conn.commit()
+        print("ContentTypes criados com sucesso!")
+    else:
+        print("Tabela django_content_type já existe.")
         
-        conn.execute('''
-        INSERT INTO auth_user (password, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
-        ''', (password_hash, 1, 'admin', 'Admin', 'User', 'admin@example.com', 1, 1))
-        print("Usuário admin criado com sucesso! Senha: admin123")
+        # Verificar se tem os types para a app agenda
+        cursor.execute("SELECT id FROM django_content_type WHERE app_label='agenda' AND model='agenda'")
+        agenda_type = cursor.fetchone()
+        
+        if not agenda_type:
+            print("Inserindo content types para a app agenda...")
+            types_to_add = [
+                ('agenda', 'agenda'),
+                ('agenda', 'genero'),
+                ('agenda', 'faixa_etaria')
+            ]
+            
+            for app_label, model in types_to_add:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO django_content_type (app_label, model) VALUES (?, ?)",
+                    (app_label, model)
+                )
+            
+            conn.commit()
+            print("Content types da agenda adicionados!")
     
-    # Adicionar gêneros
-    generos = ['Masculino', 'Feminino', 'Não-binário', 'Outro']
-    for genero in generos:
-        genero_exists = conn.execute("SELECT COUNT(*) FROM agenda_genero WHERE nome = ?;", (genero,)).fetchone()[0]
-        if genero_exists == 0:
-            conn.execute("INSERT INTO agenda_genero (nome) VALUES (?);", (genero,))
+    # Verificar quais content types existem
+    cursor.execute("SELECT id, app_label, model FROM django_content_type")
+    content_types = cursor.fetchall()
+    print("\nContentTypes disponíveis:")
+    for ct in content_types:
+        print(f"ID: {ct[0]}, App: {ct[1]}, Model: {ct[2]}")
+        
+    # Fechar conexão
+    conn.close()
+    print("\nSetup do SQLite Cloud concluído com sucesso!")
     
-    # Adicionar faixas etárias
-    faixas = ['Criança (0-12)', 'Adolescente (13-17)', 'Adulto (18-59)', 'Idoso (60+)']
-    for faixa in faixas:
-        faixa_exists = conn.execute("SELECT COUNT(*) FROM agenda_faixa_etaria WHERE nome = ?;", (faixa,)).fetchone()[0]
-        if faixa_exists == 0:
-            conn.execute("INSERT INTO agenda_faixa_etaria (nome) VALUES (?);", (faixa,))
-    
-    # Adicionar agendamentos de exemplo
-    agendamentos = [
-        ('João', 'Silva', '123.456.789-00', 'joao@example.com', '(11) 98765-4321', 'Corte de cabelo', '2023-05-20 14:30:00', '50,00', 1, 3, 1),
-        ('Maria', 'Santos', '987.654.321-00', 'maria@example.com', '(11) 91234-5678', 'Manicure', '2023-05-21 10:00:00', '40,00', 2, 3, 1),
-    ]
-    
-    for agenda in agendamentos:
-        nome, sobrenome, cpf, email, contato, descricao, data_hora, valor, genero_id, faixa_id, proprietario_id = agenda
-        agenda_exists = conn.execute("SELECT COUNT(*) FROM agenda_agenda WHERE nome = ? AND sobrenome = ? AND cpf = ?;", (nome, sobrenome, cpf)).fetchone()[0]
-        if agenda_exists == 0:
-            conn.execute('''
-            INSERT INTO agenda_agenda (nome, sobrenome, cpf, email, contato, descricao_servico, data_hora, valor, show, genero_id, faixa_etaria_id, proprietario_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?);
-            ''', (nome, sobrenome, cpf, email, contato, descricao, data_hora, valor, genero_id, faixa_id, proprietario_id))
-
-if __name__ == "__main__":
-    main() 
+except Exception as e:
+    print(f"Erro durante o setup: {e}")
+    sys.exit(1) 

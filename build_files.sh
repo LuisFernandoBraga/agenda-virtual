@@ -51,10 +51,20 @@ $PIP_CMD install --upgrade pip
 echo "Instalando apenas o SQLite Cloud para configuração inicial..."
 $PIP_CMD install sqlitecloud
 
+# Instalar o SQLite Cloud e configurar o banco de dados
+echo "Instalando SQLite Cloud..."
+$PIP_CMD install sqlitecloud
+
 # Configurar o SQLite Cloud diretamente
 if [ "$VERCEL" = "1" ]; then
-    echo "Configurando o SQLite Cloud com script simplificado..."
-    $PYTHON_CMD scripts/vercel_setup.py
+    echo "Configurando o SQLite Cloud com script de setup..."
+    echo "Rodando o script vercel_setup.py..."
+    $PYTHON_CMD scripts/vercel_setup.py || {
+        echo "Erro ao executar o script de setup, mas continuando o build..."
+    }
+    
+    # Marcar variáveis de ambiente para o SQLite Cloud
+    export SQLITECLOUD_ENABLED=True
 fi
 
 # Agora instalar o resto das dependências
