@@ -53,6 +53,12 @@ MIDDLEWARE = [
     'agenda.middleware.SqliteCloudConnectionMiddleware',
 ]
 
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'agenda.auth_backends.SqliteCloudBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 ROOT_URLCONF = 'project.urls'
 
 TEMPLATES = [

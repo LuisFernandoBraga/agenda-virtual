@@ -6,6 +6,9 @@ sem depender das importações do Django.
 """
 import os
 import sqlitecloud
+import hashlib
+import base64
+import secrets
 
 def main():
     # Obter a string de conexão do SQLite Cloud
@@ -90,14 +93,34 @@ def create_tables(conn):
     );
     ''')
 
+def create_django_password_hash(password, iterations=720000):
+    """
+    Cria um hash de senha no formato PBKDF2 usado pelo Django.
+    Este formato é: pbkdf2_sha256$<iterations>$<salt>$<hash>
+    """
+    salt = secrets.token_hex(8)
+    hash_obj = hashlib.pbkdf2_hmac(
+        'sha256', 
+        password.encode('utf-8'),
+        salt.encode('ascii'),
+        iterations,
+        dklen=32
+    )
+    hash_base64 = base64.b64encode(hash_obj).decode('ascii')
+    
+    return f"pbkdf2_sha256${iterations}${salt}${hash_base64}"
+
 def populate_data(conn):
     # Adicionar usuário admin
     admin_exists = conn.execute("SELECT COUNT(*) FROM auth_user WHERE username = 'admin';").fetchone()[0]
     if admin_exists == 0:
+        # Criar hash para a senha 'admin123'
+        password_hash = create_django_password_hash('admin123')
+        
         conn.execute('''
         INSERT INTO auth_user (password, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
-        ''', ('pbkdf2_sha256$720000$OQr82Oe63jLbztwSOMvdp3$9cA+JZvYWUEILl5ZICt0WLZ1smzhs4QgZ0Z/hbReYjw=', 1, 'admin', 'Admin', 'User', 'admin@example.com', 1, 1))
+        ''', (password_hash, 1, 'admin', 'Admin', 'User', 'admin@example.com', 1, 1))
         print("Usuário admin criado com sucesso! Senha: admin123")
     
     # Adicionar gêneros
@@ -116,7 +139,7 @@ def populate_data(conn):
     
     # Adicionar agendamentos de exemplo
     agendamentos = [
-        ('João', 'Silva', '123.456.789-00', 'joao@example.com', '(11) 98765-4321', 'Corte de cabelo', '2023-05-20 14:30:00', '50,00', 1, 1, 3),
+        ('João', 'Silva', '123.456.789-00', 'joao@example.com', '(11) 98765-4321', 'Corte de cabelo', '2023-05-20 14:30:00', '50,00', 1, 3, 1),
         ('Maria', 'Santos', '987.654.321-00', 'maria@example.com', '(11) 91234-5678', 'Manicure', '2023-05-21 10:00:00', '40,00', 2, 3, 1),
     ]
     
