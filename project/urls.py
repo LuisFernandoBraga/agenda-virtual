@@ -25,7 +25,6 @@ urlpatterns = [
     path('inserir_cadastro/', include('agenda.urls')),
     path('atualiza/', include('agenda.urls')),
     path('excluir/', include('agenda.urls')),
-    path('registro', include('agenda.urls')),
     path('admin/', admin.site.urls),
 ]
 

@@ -6,13 +6,8 @@
 <hr>
     {% if page_obj %}
     <div>
-        {% if is_cloud %}
-            <a href={% url "inserir_cadastro_alt" %} class="d-flex" 
-            role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
-        {% else %}
-            <a href={% url "inserir_cadastro" %} class="d-flex" 
-            role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
-        {% endif %}
+        <a href={% url "inserir_cadastro" %} class="d-flex" 
+        role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
         <table class="table table-bordered table hover">
             <thead class="table-success">
                 <tr>
@@ -31,7 +26,7 @@
                 <td class="table-cel">
                     {% if is_cloud %}
                         {% if cadastro.0 %}
-                            <a class="table-link" href="{% url 'cadastro_alt' cadastro.0 %}">
+                            <a class="table-link" href="{% url 'cadastro' cadastro.0 %}">
                                 {{cadastro.0}}
                             </a>
                         {% else %}
@@ -67,22 +62,12 @@
                 {% for cadastro in page_obj %}
                 <tr class="table-row">
                 <td class="table-cel">
-                    {% if is_cloud %}
-                        {% if cadastro.id %}
-                            <a class="table-link" href="{% url 'cadastro_alt' cadastro.id %}">
-                                {{cadastro.id}}
-                            </a>
-                        {% else %}
-                            <span>ID inválido</span>
-                        {% endif %}
+                    {% if cadastro.id %}
+                        <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
+                            {{cadastro.id}}
+                        </a>
                     {% else %}
-                        {% if cadastro.id %}
-                            <a class="table-link" href="{% url 'cadastro' cadastro.id %}">
-                                {{cadastro.id}}
-                            </a>
-                        {% else %}
-                            <span>ID inválido</span>
-                        {% endif %}
+                        <span>ID inválido</span>
                     {% endif %}
                 </td>
                 <td>{{cadastro.nome}}</td>
@@ -99,13 +84,8 @@
         </div>
     {% else %}
     <div class="single-contact">
-        {% if is_cloud %}
-            <a href={% url "inserir_cadastro_alt" %} class="d-flex" 
-            role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
-        {% else %}
-            <a href={% url "inserir_cadastro" %} class="d-flex" 
-            role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
-        {% endif %}
+        <a href={% url "inserir_cadastro" %} class="d-flex" 
+        role="search" class="form-control me-2"><h3>Adicionar Cadastro</h3></a> <br><br>
         <h1 class="single-contact-name">
             Nenhum agendamento encontrado!
         </h1>
