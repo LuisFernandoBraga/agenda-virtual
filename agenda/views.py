@@ -93,12 +93,15 @@ def index(request, methods=["GET", "POST"]):
         items_per_page = 8
         offset = (page_number - 1) * items_per_page
         
-        # Obter itens da agenda via SQLite Cloud
+        # Obter todos os itens para contar o total
+        all_items = get_agenda_items()
+        total_count = len(all_items) if all_items else 0
+        
+        # Obter itens da agenda via SQLite Cloud com paginação
         agendas_data = get_agenda_items(limit=items_per_page, offset=offset)
         
-        # Criar objetos para paginação manual
-        total_count = len(get_agenda_items())
-        total_pages = (total_count + items_per_page - 1) // items_per_page
+        # Calcular total de páginas
+        total_pages = (total_count + items_per_page - 1) // items_per_page if total_count > 0 else 1
         
         # Criar um objeto similar ao paginator do Django
         class SimplePage:
@@ -119,7 +122,16 @@ def index(request, methods=["GET", "POST"]):
             def next_page_number(self):
                 return self.number + 1
         
-        paginator = Paginator(total_count, total_pages)
+        # Criar uma classe paginator simplificada
+        class SimplePaginator:
+            def __init__(self, object_list, per_page, total_pages):
+                self.object_list = object_list
+                self.per_page = per_page
+                self.num_pages = total_pages
+                self.count = len(object_list) if object_list else 0
+                
+        # Criar os objetos de paginação
+        paginator = SimplePaginator(all_items, items_per_page, total_pages)
         page_obj = SimplePage(agendas_data, page_number, paginator)
     else:
         # Código original para obter os dados do ORM Django
@@ -176,12 +188,15 @@ def pesquisa(request):
         items_per_page = 4
         offset = (page_number - 1) * items_per_page
         
-        # Obter itens da agenda via SQLite Cloud com filtro de pesquisa
+        # Obter todos os itens para contagem total
+        all_items = get_agenda_items(search=pesquisa_valor)
+        total_count = len(all_items) if all_items else 0
+        
+        # Obter itens da agenda via SQLite Cloud com paginação
         agendas_data = get_agenda_items(limit=items_per_page, offset=offset, search=pesquisa_valor)
         
-        # Criar objetos para paginação manual
-        total_count = len(get_agenda_items(search=pesquisa_valor))
-        total_pages = (total_count + items_per_page - 1) // items_per_page
+        # Calcular total de páginas
+        total_pages = (total_count + items_per_page - 1) // items_per_page if total_count > 0 else 1
         
         # Criar um objeto similar ao paginator do Django
         class SimplePage:
@@ -202,7 +217,16 @@ def pesquisa(request):
             def next_page_number(self):
                 return self.number + 1
         
-        paginator = Paginator(total_count, total_pages)
+        # Criar uma classe paginator simplificada
+        class SimplePaginator:
+            def __init__(self, object_list, per_page, total_pages):
+                self.object_list = object_list
+                self.per_page = per_page
+                self.num_pages = total_pages
+                self.count = len(object_list) if object_list else 0
+                
+        # Criar os objetos de paginação
+        paginator = SimplePaginator(all_items, items_per_page, total_pages)
         page_obj = SimplePage(agendas_data, page_number, paginator)
     else:
         # Código original para obter os dados do ORM Django
